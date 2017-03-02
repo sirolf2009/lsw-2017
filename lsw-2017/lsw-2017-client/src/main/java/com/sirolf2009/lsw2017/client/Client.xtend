@@ -70,10 +70,7 @@ import com.sirolf2009.lsw2017.common.model.PointRequest
 				children += new Button => [
 					text = "Submit"
 					onAction = [
-						connector.proxy.requestPoints(new PointRequest() => [
-							teamName = team.text                       
-							points = Integer.parseInt(points.text)
-						])
+						connector.proxy.requestPoints(new PointRequest(team.text, Integer.parseInt(points.text), System.currentTimeMillis))
 						team.clear()
 						points.clear()
 					]

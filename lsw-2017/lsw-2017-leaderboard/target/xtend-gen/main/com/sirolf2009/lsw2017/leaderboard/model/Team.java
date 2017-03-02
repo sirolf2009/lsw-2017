@@ -1,7 +1,9 @@
 package com.sirolf2009.lsw2017.leaderboard.model;
 
 import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.LongProperty;
 import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleLongProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import xtendfx.beans.FXBindable;
@@ -9,10 +11,11 @@ import xtendfx.beans.FXBindable;
 @FXBindable
 @SuppressWarnings("all")
 public class Team {
-  public Team(final int likes, final String name, final String subcamp) {
+  public Team(final int likes, final String name, final String subcamp, final long lastCheckedIn) {
     this.setLikes(likes);
     this.setName(name);
     this.setSubcamp(subcamp);
+    this.setLastCheckedIn(lastCheckedIn);
   }
   
   private final static int DEFAULT_LIKES = 0;
@@ -70,5 +73,24 @@ public class Team {
     	this.subcampProperty = new SimpleStringProperty(this, "subcamp", DEFAULT_SUBCAMP);
     }
     return this.subcampProperty;
+  }
+  
+  private final static long DEFAULT_LASTCHECKEDIN = 0;
+  
+  private SimpleLongProperty lastCheckedInProperty;
+  
+  public long getLastCheckedIn() {
+    return (this.lastCheckedInProperty != null)? this.lastCheckedInProperty.get() : DEFAULT_LASTCHECKEDIN;
+  }
+  
+  public void setLastCheckedIn(final long lastCheckedIn) {
+    this.lastCheckedInProperty().set(lastCheckedIn);
+  }
+  
+  public LongProperty lastCheckedInProperty() {
+    if (this.lastCheckedInProperty == null) { 
+    	this.lastCheckedInProperty = new SimpleLongProperty(this, "lastCheckedIn", DEFAULT_LASTCHECKEDIN);
+    }
+    return this.lastCheckedInProperty;
   }
 }

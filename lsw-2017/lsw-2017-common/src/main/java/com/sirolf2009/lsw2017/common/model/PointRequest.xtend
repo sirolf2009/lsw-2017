@@ -8,5 +8,14 @@ import org.eclipse.xtend.lib.annotations.EqualsHashCode
 	
 	String teamName
 	int points
+	long currentTime
+	
+	new() {}
+	
+	new(String teamName, int points, long currentTime) {
+		this.teamName = teamName
+		this.points = points
+		this.currentTime = currentTime
+	}
 	
 }

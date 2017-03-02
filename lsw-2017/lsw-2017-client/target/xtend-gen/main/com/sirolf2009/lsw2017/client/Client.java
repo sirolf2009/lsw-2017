@@ -125,16 +125,12 @@ public class Client extends Application {
           it_3.setText("Submit");
           final EventHandler<ActionEvent> _function_8 = (ActionEvent it_4) -> {
             ServerProxy _proxy = connector.getProxy();
-            PointRequest _pointRequest = new PointRequest();
-            final Procedure1<PointRequest> _function_9 = (PointRequest it_5) -> {
-              String _text = team.getText();
-              it_5.setTeamName(_text);
-              String _text_1 = points.getText();
-              int _parseInt = Integer.parseInt(_text_1);
-              it_5.setPoints(_parseInt);
-            };
-            PointRequest _doubleArrow_3 = ObjectExtensions.<PointRequest>operator_doubleArrow(_pointRequest, _function_9);
-            _proxy.requestPoints(_doubleArrow_3);
+            String _text = team.getText();
+            String _text_1 = points.getText();
+            int _parseInt = Integer.parseInt(_text_1);
+            long _currentTimeMillis = System.currentTimeMillis();
+            PointRequest _pointRequest = new PointRequest(_text, _parseInt, _currentTimeMillis);
+            _proxy.requestPoints(_pointRequest);
             team.clear();
             points.clear();
           };

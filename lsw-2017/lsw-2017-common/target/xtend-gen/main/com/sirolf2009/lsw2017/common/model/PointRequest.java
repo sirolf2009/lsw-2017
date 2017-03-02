@@ -15,6 +15,17 @@ public class PointRequest {
   
   private int points;
   
+  private long currentTime;
+  
+  public PointRequest() {
+  }
+  
+  public PointRequest(final String teamName, final int points, final long currentTime) {
+    this.teamName = teamName;
+    this.points = points;
+    this.currentTime = currentTime;
+  }
+  
   @Pure
   public String getTeamName() {
     return this.teamName;
@@ -33,12 +44,22 @@ public class PointRequest {
     this.points = points;
   }
   
+  @Pure
+  public long getCurrentTime() {
+    return this.currentTime;
+  }
+  
+  public void setCurrentTime(final long currentTime) {
+    this.currentTime = currentTime;
+  }
+  
   @Override
   @Pure
   public String toString() {
     ToStringBuilder b = new ToStringBuilder(this);
     b.add("teamName", this.teamName);
     b.add("points", this.points);
+    b.add("currentTime", this.currentTime);
     return b.toString();
   }
   
@@ -59,6 +80,8 @@ public class PointRequest {
       return false;
     if (other.points != this.points)
       return false;
+    if (other.currentTime != this.currentTime)
+      return false;
     return true;
   }
   
@@ -69,6 +92,7 @@ public class PointRequest {
     int result = 1;
     result = prime * result + ((this.teamName== null) ? 0 : this.teamName.hashCode());
     result = prime * result + this.points;
+    result = prime * result + (int) (this.currentTime ^ (this.currentTime >>> 32));
     return result;
   }
 }

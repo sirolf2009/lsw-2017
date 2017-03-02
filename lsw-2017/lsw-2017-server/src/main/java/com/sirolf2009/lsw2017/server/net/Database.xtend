@@ -25,9 +25,10 @@ class Database implements Closeable {
 		log.info("Database connection initialized")
 	}
 	
-	def awardPoints(String teamName, int points) {
+	def awardPoints(String teamName, int points, long time) {
 		bucket.async.get(teamName).map[
 			content.put("points", content.getInt("points")+points)
+			content.put("lastCheckedIn", time)
 			return it
 		].map[
 			return bucket.replace(it, 1, TimeUnit.SECONDS)
@@ -43,7 +44,7 @@ class Database implements Closeable {
 	}
 	
 	def createNewTeam(String teamName) {
-		val team = JsonObject.create().put("points", 0)
+		val team = JsonObject.create().put("points", 0).put("lastCheckedIn", 0)
 		bucket.upsert(JsonDocument.create(teamName, team))
 	}
 	

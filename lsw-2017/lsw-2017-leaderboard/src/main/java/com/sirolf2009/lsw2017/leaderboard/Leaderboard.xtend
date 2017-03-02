@@ -18,7 +18,7 @@ import rx.schedulers.Schedulers
 
 @FXApp class Leaderboard {
 	
-	val testData = FXCollections.observableArrayList(new Team(42, "sirolf2009", "Krummi"), new Team(-100, "Ólavur Riddararós", "Týr"), new Team(1234, "Rotlaust Tre Fell", "Wardruna"))
+	val testData = FXCollections.observableArrayList(new Team(42, "sirolf2009", "Krummi", 0), new Team(-100, "Ólavur Riddararós", "Týr", 0), new Team(1234, "Rotlaust Tre Fell", "Wardruna", 0))
 	
 	override start(Stage it) throws Exception {
 		title = "LSW 2017 leaderboard"
@@ -32,7 +32,7 @@ import rx.schedulers.Schedulers
 					bucket.async.query(N1qlQuery.simple("SELECT table.*, meta(table).id FROM `lsw-2017` table order by points desc limit 40")).flatMap[result|
 						result.errors.flatMap[e|Observable.error(new CouchbaseException("N1QL Error/Warning: " + e))].switchIfEmpty(result.rows)
 					].map[value].map[
-						return new Team(getInt("points"), getString("id"), "TODO")
+						return new Team(getInt("points"), getString("id"), "TODO", System.currentTimeMillis)
 					].subscribeOn(Schedulers.computation).subscribe[
 						val existing = testData.findFirst[data|data.name.equals(name)]
 						if(existing == null) {

@@ -7,11 +7,13 @@ import xtendfx.beans.FXBindable
 	int likes
 	String name
 	String subcamp
+	long lastCheckedIn
 	
-	new(int likes, String name, String subcamp) {
+	new(int likes, String name, String subcamp, long lastCheckedIn) {
 		this.likes = likes
 		this.name = name
 		this.subcamp = subcamp
+		this.lastCheckedIn = lastCheckedIn
 	}
 	
 }

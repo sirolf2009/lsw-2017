@@ -23,7 +23,7 @@ class Server implements Closeable {
 			if(!database.doesTeamExist(teamName)) {
 				database.createNewTeam(teamName)
 			}
-			database.awardPoints(teamName, points)
+			database.awardPoints(teamName, points, currentTime)
 			log.info("Awarded "+teamName+" "+points+" points")
 		]
 	}

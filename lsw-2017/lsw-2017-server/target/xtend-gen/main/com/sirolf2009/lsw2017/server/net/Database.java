@@ -35,7 +35,7 @@ public class Database implements Closeable {
     Database.log.info("Database connection initialized");
   }
   
-  public void awardPoints(final String teamName, final int points) {
+  public void awardPoints(final String teamName, final int points, final long time) {
     AsyncBucket _async = this.bucket.async();
     Observable<JsonDocument> _get = _async.get(teamName);
     final Func1<JsonDocument, JsonDocument> _function = (JsonDocument it) -> {
@@ -44,6 +44,8 @@ public class Database implements Closeable {
       Integer _int = _content_1.getInt("points");
       int _plus = ((_int).intValue() + points);
       _content.put("points", _plus);
+      JsonObject _content_2 = it.content();
+      _content_2.put("lastCheckedIn", time);
       return it;
     };
     Observable<JsonDocument> _map = _get.<JsonDocument>map(_function);
@@ -70,7 +72,8 @@ public class Database implements Closeable {
     JsonDocument _xblockexpression = null;
     {
       JsonObject _create = JsonObject.create();
-      final JsonObject team = _create.put("points", 0);
+      JsonObject _put = _create.put("points", 0);
+      final JsonObject team = _put.put("lastCheckedIn", 0);
       JsonDocument _create_1 = JsonDocument.create(teamName, team);
       _xblockexpression = this.bucket.<JsonDocument>upsert(_create_1);
     }

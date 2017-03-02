@@ -42,7 +42,8 @@ public class Server implements Closeable {
       }
       String _teamName_2 = it.getTeamName();
       int _points = it.getPoints();
-      this.database.awardPoints(_teamName_2, _points);
+      long _currentTime = it.getCurrentTime();
+      this.database.awardPoints(_teamName_2, _points, _currentTime);
       String _teamName_3 = it.getTeamName();
       String _plus = ("Awarded " + _teamName_3);
       String _plus_1 = (_plus + " ");

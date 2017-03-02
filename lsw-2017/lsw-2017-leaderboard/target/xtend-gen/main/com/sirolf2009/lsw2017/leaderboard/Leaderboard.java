@@ -38,7 +38,7 @@ import xtendfx.FXApp;
 @FXApp
 @SuppressWarnings("all")
 public class Leaderboard extends Application {
-  private final ObservableList<Team> testData = FXCollections.<Team>observableArrayList(new Team(42, "sirolf2009", "Krummi"), new Team((-100), "Ólavur Riddararós", "Týr"), new Team(1234, "Rotlaust Tre Fell", "Wardruna"));
+  private final ObservableList<Team> testData = FXCollections.<Team>observableArrayList(new Team(42, "sirolf2009", "Krummi", 0), new Team((-100), "Ólavur Riddararós", "Týr", 0), new Team(1234, "Rotlaust Tre Fell", "Wardruna", 0));
   
   @Override
   public void start(final Stage it) throws Exception {
@@ -69,7 +69,8 @@ public class Leaderboard extends Application {
           final Func1<JsonObject, Team> _function_3 = (JsonObject it_1) -> {
             Integer _int = it_1.getInt("points");
             String _string = it_1.getString("id");
-            return new Team((_int).intValue(), _string, "TODO");
+            long _currentTimeMillis = System.currentTimeMillis();
+            return new Team((_int).intValue(), _string, "TODO", _currentTimeMillis);
           };
           Observable<Team> _map_1 = _map.<Team>map(_function_3);
           Scheduler _computation = Schedulers.computation();
