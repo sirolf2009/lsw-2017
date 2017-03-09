@@ -150,7 +150,7 @@ public class Leaderboard extends Application {
       _rowConstraints_4.add(_doubleArrow_5);
       TableView<Team> _tableView = new TableView<Team>();
       final Procedure1<TableView<Team>> _function_8 = (TableView<Team> it_2) -> {
-        final TableColumn<Team, Number> likesCol = new TableColumn<Team, Number>("Likes");
+        final TableColumn<Team, Number> likesCol = new TableColumn<Team, Number>("Vind ik leuks");
         final Callback<TableColumn.CellDataFeatures<Team, Number>, ObservableValue<Number>> _function_9 = (TableColumn.CellDataFeatures<Team, Number> it_3) -> {
           Team _value = it_3.getValue();
           return _value.likesProperty();

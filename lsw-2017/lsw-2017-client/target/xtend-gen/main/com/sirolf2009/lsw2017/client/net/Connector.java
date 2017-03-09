@@ -6,6 +6,9 @@ import com.esotericsoftware.kryonet.Listener;
 import com.esotericsoftware.kryonet.rmi.ObjectSpace;
 import com.sirolf2009.lsw2017.common.Network;
 import com.sirolf2009.lsw2017.common.ServerProxy;
+import com.sirolf2009.lsw2017.common.model.NotifyBattleground;
+import com.sirolf2009.lsw2017.common.model.NotifySuccesful;
+import eu.hansolo.enzo.notification.Notification;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleBooleanProperty;
 import org.apache.logging.log4j.LogManager;
@@ -18,6 +21,7 @@ import org.eclipse.xtext.xbase.lib.Pure;
 public class Connector {
   private final static Logger log = LogManager.getLogger();
   
+  @Accessors
   private final Client client;
   
   @Accessors
@@ -52,6 +56,32 @@ public class Connector {
         Platform.runLater(_function);
         Connector.this.connect();
       }
+      
+      @Override
+      public void received(final Connection connection, final Object packet) {
+        if ((packet instanceof NotifySuccesful)) {
+          final NotifySuccesful succes = ((NotifySuccesful) packet);
+          final Runnable _function = () -> {
+            String _teamName = succes.getTeamName();
+            String _plus = (_teamName + " now has ");
+            int _points = succes.getPoints();
+            String _plus_1 = (_plus + Integer.valueOf(_points));
+            String _plus_2 = (_plus_1 + " points");
+            Notification.Notifier.INSTANCE.notifySuccess("Succes!", _plus_2);
+          };
+          Platform.runLater(_function);
+        } else {
+          if ((packet instanceof NotifyBattleground)) {
+            final NotifyBattleground battleground = ((NotifyBattleground) packet);
+            final Runnable _function_1 = () -> {
+              String _teamName = battleground.getTeamName();
+              String _plus = (_teamName + " must now go to the battleground");
+              Notification.Notifier.INSTANCE.notifyWarning("Battleground", _plus);
+            };
+            Platform.runLater(_function_1);
+          }
+        }
+      }
     });
     this.connect();
   }
@@ -80,6 +110,11 @@ public class Connector {
     };
     Thread _thread = new Thread(_function);
     _thread.start();
+  }
+  
+  @Pure
+  public Client getClient() {
+    return this.client;
   }
   
   @Pure

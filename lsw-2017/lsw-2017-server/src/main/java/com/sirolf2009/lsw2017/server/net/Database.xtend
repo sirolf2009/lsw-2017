@@ -4,11 +4,14 @@ import com.couchbase.client.java.Bucket
 import com.couchbase.client.java.CouchbaseCluster
 import com.couchbase.client.java.document.JsonDocument
 import com.couchbase.client.java.document.json.JsonObject
-import org.apache.logging.log4j.LogManager
-import org.apache.logging.log4j.Logger
 import java.io.Closeable
 import java.io.IOException
 import java.util.concurrent.TimeUnit
+import org.apache.logging.log4j.LogManager
+import org.apache.logging.log4j.Logger
+import org.eclipse.xtend.lib.annotations.Accessors
+import rx.subjects.PublishSubject
+import com.sirolf2009.lsw2017.common.model.PointRequest
 
 class Database implements Closeable {
 
@@ -16,24 +19,33 @@ class Database implements Closeable {
 
 	val CouchbaseCluster cluster
 	val Bucket bucket
+	
+	@Accessors val PublishSubject<Pair<PointRequest, JsonDocument>> pointsAwarded
 
 	new() {
 		cluster = CouchbaseCluster.create("localhost")
 		bucket = cluster.openBucket("lsw-2017", "iwanttodie123")
 		bucket.bucketManager().createN1qlPrimaryIndex(true, false);
 		
+		pointsAwarded = PublishSubject.create()
+		
 		log.info("Database connection initialized")
 	}
 	
-	def awardPoints(String teamName, int points, long time) {
-		bucket.async.get(teamName).map[
-			content.put("points", content.getInt("points")+points)
-			content.put("lastCheckedIn", time)
+	def awardPoints(PointRequest request) {
+		bucket.async.get(request.teamName).map[
+			content.put("points", content.getInt("points")+request.points)
+			content.put("lastCheckedIn", request.currentTime)
+			content.put("checkedInCount", content.getInt("checkedInCount")+1)
 			return it
 		].map[
 			return bucket.replace(it, 1, TimeUnit.SECONDS)
 		].toBlocking.subscribe([
-			println(it)
+			try {
+				pointsAwarded.onNext(request -> it)
+			} catch(Exception e) {
+				log.error("Failed to publish points awarded", e)
+			}
 		], [
 			log.error("Failed to award points", it)
 		])
@@ -44,7 +56,7 @@ class Database implements Closeable {
 	}
 	
 	def createNewTeam(String teamName) {
-		val team = JsonObject.create().put("points", 0).put("lastCheckedIn", 0)
+		val team = JsonObject.create().put("points", 0).put("lastCheckedIn", 0).put("checkedInCount", 0)
 		bucket.upsert(JsonDocument.create(teamName, team))
 	}
 	

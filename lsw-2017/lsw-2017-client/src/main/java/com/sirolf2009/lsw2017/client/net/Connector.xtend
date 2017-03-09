@@ -11,12 +11,15 @@ import javafx.beans.property.SimpleBooleanProperty
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import org.eclipse.xtend.lib.annotations.Accessors
+import com.sirolf2009.lsw2017.common.model.NotifySuccesful
+import eu.hansolo.enzo.notification.Notification.Notifier
+import com.sirolf2009.lsw2017.common.model.NotifyBattleground
 
 class Connector {
 
 	static val Logger log = LogManager.getLogger()
 
-	val Client client
+	@Accessors val Client client
 	@Accessors var ServerProxy proxy
 	@Accessors val SimpleBooleanProperty connected
 
@@ -40,6 +43,21 @@ class Connector {
 				]
 				connect()
 			}
+
+			override received(Connection connection, Object packet) {
+				if(packet instanceof NotifySuccesful) {
+					val succes = packet as NotifySuccesful
+					Platform.runLater [
+						Notifier.INSTANCE.notifySuccess("Succes!", succes.teamName + " now has " + succes.points + " points")
+					]
+				} else if(packet instanceof NotifyBattleground) {
+					val battleground = packet as NotifyBattleground
+					Platform.runLater [
+						Notifier.INSTANCE.notifyWarning("Battleground", battleground.teamName + " must now go to the battleground")
+					]
+				}
+			}
+
 		})
 		connect()
 	}

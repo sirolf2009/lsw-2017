@@ -6,13 +6,15 @@ import org.eclipse.xtend.lib.annotations.EqualsHashCode
 
 @Accessors @ToString @EqualsHashCode class PointRequest {
 	
+	int clientID
 	String teamName
 	int points
 	long currentTime
 	
 	new() {}
 	
-	new(String teamName, int points, long currentTime) {
+	new(int clientID, String teamName, int points, long currentTime) {
+		this.clientID = clientID
 		this.teamName = teamName
 		this.points = points
 		this.currentTime = currentTime

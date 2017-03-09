@@ -11,6 +11,8 @@ import org.eclipse.xtext.xbase.lib.util.ToStringBuilder;
 @EqualsHashCode
 @SuppressWarnings("all")
 public class PointRequest {
+  private int clientID;
+  
   private String teamName;
   
   private int points;
@@ -20,10 +22,20 @@ public class PointRequest {
   public PointRequest() {
   }
   
-  public PointRequest(final String teamName, final int points, final long currentTime) {
+  public PointRequest(final int clientID, final String teamName, final int points, final long currentTime) {
+    this.clientID = clientID;
     this.teamName = teamName;
     this.points = points;
     this.currentTime = currentTime;
+  }
+  
+  @Pure
+  public int getClientID() {
+    return this.clientID;
+  }
+  
+  public void setClientID(final int clientID) {
+    this.clientID = clientID;
   }
   
   @Pure
@@ -57,6 +69,7 @@ public class PointRequest {
   @Pure
   public String toString() {
     ToStringBuilder b = new ToStringBuilder(this);
+    b.add("clientID", this.clientID);
     b.add("teamName", this.teamName);
     b.add("points", this.points);
     b.add("currentTime", this.currentTime);
@@ -73,6 +86,8 @@ public class PointRequest {
     if (getClass() != obj.getClass())
       return false;
     PointRequest other = (PointRequest) obj;
+    if (other.clientID != this.clientID)
+      return false;
     if (this.teamName == null) {
       if (other.teamName != null)
         return false;
@@ -90,6 +105,7 @@ public class PointRequest {
   public int hashCode() {
     final int prime = 31;
     int result = 1;
+    result = prime * result + this.clientID;
     result = prime * result + ((this.teamName== null) ? 0 : this.teamName.hashCode());
     result = prime * result + this.points;
     result = prime * result + (int) (this.currentTime ^ (this.currentTime >>> 32));

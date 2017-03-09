@@ -1,0 +1,9 @@
+.fullscreen-button {
+	-fx-graphic: url("full_screen.png");
+	-fx-background-color: white;
+	-fx-padding: 4px;
+}
+
+.fullscreen-button:selected {
+	-fx-graphic: url("exit_full_screen.png");
+}

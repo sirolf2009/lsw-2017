@@ -68,7 +68,7 @@ import rx.schedulers.Schedulers
 				percentHeight = 10
 			]
 			add(new TableView() => [
-				val likesCol = new TableColumn<Team, Number>("Likes")
+				val likesCol = new TableColumn<Team, Number>("Vind ik leuks")
 				likesCol.cellValueFactory = [value.likesProperty]
 				val nameCol = new TableColumn<Team, String>("Naam")
 				nameCol.cellValueFactory = [value.nameProperty]

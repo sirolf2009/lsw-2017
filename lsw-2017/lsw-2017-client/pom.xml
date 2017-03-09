@@ -57,5 +57,10 @@
 			<artifactId>lsw-2017-common</artifactId>
 			<version>0.0.1-SNAPSHOT</version>
 		</dependency>
+		<dependency>
+			<groupId>eu.hansolo.enzo</groupId>
+			<artifactId>Enzo</artifactId>
+			<version>0.3.6</version>
+		</dependency>
 	</dependencies>
 </project>

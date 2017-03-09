@@ -1,11 +1,11 @@
 package com.sirolf2009.lsw2017.server.net;
 
 import com.esotericsoftware.kryonet.Connection;
-import com.esotericsoftware.kryonet.EndPoint;
 import com.esotericsoftware.kryonet.Listener;
 import com.esotericsoftware.kryonet.Server;
 import com.sirolf2009.lsw2017.common.Network;
 import com.sirolf2009.lsw2017.server.net.Facade;
+import java.net.InetSocketAddress;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.xtend.lib.annotations.Accessors;
@@ -35,9 +35,17 @@ public class Connector {
       this.server.start();
       this.server.addListener(new Listener() {
         @Override
-        public void connected(final Connection arg0) {
-          EndPoint _endPoint = arg0.getEndPoint();
-          String _plus = (_endPoint + " connecting");
+        public void connected(final Connection connection) {
+          InetSocketAddress _remoteAddressTCP = connection.getRemoteAddressTCP();
+          String _plus = (_remoteAddressTCP + "");
+          connection.setName(_plus);
+          String _plus_1 = (connection + " connected");
+          Connector.log.info(_plus_1);
+        }
+        
+        @Override
+        public void disconnected(final Connection connection) {
+          String _plus = (connection + " disconnected");
           Connector.log.info(_plus);
         }
       });

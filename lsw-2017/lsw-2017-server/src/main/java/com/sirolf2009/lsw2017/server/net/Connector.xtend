@@ -25,8 +25,12 @@ import org.eclipse.xtend.lib.annotations.Accessors
 		Network.register(server)
 		server.start()
 		server.addListener(new Listener() {
-			override connected(Connection arg0) {
-				log.info(arg0.endPoint +" connecting")
+			override connected(Connection connection) {
+				connection.name = connection.remoteAddressTCP+""
+				log.info(connection +" connected")
+			}
+			override disconnected(Connection connection) {
+				log.info(connection +" disconnected")
 			}
 		})
 		server.bind(1234)
