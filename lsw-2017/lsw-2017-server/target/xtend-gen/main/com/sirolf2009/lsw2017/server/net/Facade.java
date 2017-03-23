@@ -4,9 +4,9 @@ import com.esotericsoftware.kryonet.Connection;
 import com.esotericsoftware.kryonet.rmi.ObjectSpace;
 import com.sirolf2009.lsw2017.common.ServerProxy;
 import com.sirolf2009.lsw2017.common.model.PointRequest;
+import io.reactivex.subjects.PublishSubject;
 import org.eclipse.xtend.lib.annotations.Accessors;
 import org.eclipse.xtext.xbase.lib.Pure;
-import rx.subjects.PublishSubject;
 
 @SuppressWarnings("all")
 public class Facade extends Connection implements ServerProxy {
@@ -14,10 +14,8 @@ public class Facade extends Connection implements ServerProxy {
   private final PublishSubject<PointRequest> subject;
   
   public Facade() {
-    ObjectSpace _objectSpace = new ObjectSpace(this);
-    _objectSpace.register(1, this);
-    PublishSubject<PointRequest> _create = PublishSubject.<PointRequest>create();
-    this.subject = _create;
+    new ObjectSpace(this).register(1, this);
+    this.subject = PublishSubject.<PointRequest>create();
   }
   
   @Override

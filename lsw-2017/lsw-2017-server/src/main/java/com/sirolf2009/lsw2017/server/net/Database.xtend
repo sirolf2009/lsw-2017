@@ -1,54 +1,56 @@
 package com.sirolf2009.lsw2017.server.net
 
-import com.couchbase.client.java.Bucket
-import com.couchbase.client.java.CouchbaseCluster
-import com.couchbase.client.java.document.JsonDocument
-import com.couchbase.client.java.document.json.JsonObject
+import com.datastax.driver.core.Cluster
+import com.datastax.driver.core.Session
+import com.datastax.driver.mapping.Mapper
+import com.datastax.driver.mapping.MappingManager
+import com.sirolf2009.lsw2017.common.model.PointRequest
+import io.reactivex.subjects.PublishSubject
 import java.io.Closeable
 import java.io.IOException
-import java.util.concurrent.TimeUnit
+import java.time.Duration
+import java.util.Date
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import org.eclipse.xtend.lib.annotations.Accessors
-import rx.subjects.PublishSubject
-import com.sirolf2009.lsw2017.common.model.PointRequest
+import com.sirolf2009.lsw2017.common.model.DBTeam
 
 class Database implements Closeable {
 
 	static val Logger log = LogManager.getLogger()
 
-	val CouchbaseCluster cluster
-	val Bucket bucket
+	val Cluster cluster
+	val Session session
+	val Mapper<DBTeam> mapper
 	
-	@Accessors val PublishSubject<Pair<PointRequest, JsonDocument>> pointsAwarded
+	@Accessors val PublishSubject<Pair<PointRequest, DBTeam>> pointsAwarded
+	@Accessors val PublishSubject<Pair<PointRequest, DBTeam>> pointsDenied
 
 	new() {
-		cluster = CouchbaseCluster.create("localhost")
-		bucket = cluster.openBucket("lsw-2017", "iwanttodie123")
-		bucket.bucketManager().createN1qlPrimaryIndex(true, false);
+		cluster = Cluster.builder.addContactPoints("localhost").build()
+		session = cluster.connect("lsw2017")
+		
+		val manager = new MappingManager(session)
+		mapper = manager.mapper(DBTeam)
 		
 		pointsAwarded = PublishSubject.create()
+		pointsDenied = PublishSubject.create()
 		
 		log.info("Database connection initialized")
 	}
 	
 	def awardPoints(PointRequest request) {
-		bucket.async.get(request.teamName).map[
-			content.put("points", content.getInt("points")+request.points)
-			content.put("lastCheckedIn", request.currentTime)
-			content.put("checkedInCount", content.getInt("checkedInCount")+1)
-			return it
-		].map[
-			return bucket.replace(it, 1, TimeUnit.SECONDS)
-		].toBlocking.subscribe([
-			try {
+		mapper.get(request.teamName) => [
+			if(request.currentTime-lastCheckedIn.time > Duration.ofMinutes(1).toMillis) {
+				it.points += request.points
+				it.lastCheckedIn = new Date(request.currentTime)
+				it.timesCheckedIn++
+				save()
 				pointsAwarded.onNext(request -> it)
-			} catch(Exception e) {
-				log.error("Failed to publish points awarded", e)
+			} else {
+				pointsDenied.onNext(request -> it)
 			}
-		], [
-			log.error("Failed to award points", it)
-		])
+		]
 	}
 	
 	def getPoints(String teamName) {
@@ -56,25 +58,34 @@ class Database implements Closeable {
 	}
 	
 	def createNewTeam(String teamName) {
-		val team = JsonObject.create().put("points", 0).put("lastCheckedIn", 0).put("checkedInCount", 0)
-		bucket.upsert(JsonDocument.create(teamName, team))
+		val team = new DBTeam => [
+			it.teamName = teamName
+			teamNumber = 0 //TODO
+			lastCheckedIn = new Date(0)
+			points = 0
+			timesCheckedIn = 0
+		]
+		team.save()
 	}
 	
 	def doesTeamExist(String teamName) {
-		return bucket.exists(teamName)
+		return teamName.team !== null
 	}
 	
 	def getTeam(String teamName) {
-		return bucket.get(teamName);	
+		return mapper.get(teamName)	
 	}
 	
-	def getPoints(JsonDocument document) {
-		return document.content.get("points") as Integer
+	def save(DBTeam team) {
+		mapper.save(team)
+	}
+	
+	def saveAsync(DBTeam team) {
+		mapper.saveAsync(team)
 	}
 	
 	override close() throws IOException {
-		bucket.close()
-		cluster.disconnect()
+		cluster.close()
 	}
 
 }

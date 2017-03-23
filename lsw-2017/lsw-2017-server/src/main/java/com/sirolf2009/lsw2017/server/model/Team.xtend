@@ -3,6 +3,7 @@ package com.sirolf2009.lsw2017.server.model
 import org.eclipse.xtend.lib.annotations.Data
 
 @Data
+@Deprecated
 class Team {
 	
 	private final String teamName

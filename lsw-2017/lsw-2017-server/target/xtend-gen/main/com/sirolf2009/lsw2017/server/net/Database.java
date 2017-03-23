@@ -1,136 +1,125 @@
 package com.sirolf2009.lsw2017.server.net;
 
-import com.couchbase.client.java.AsyncBucket;
-import com.couchbase.client.java.Bucket;
-import com.couchbase.client.java.CouchbaseCluster;
-import com.couchbase.client.java.bucket.BucketManager;
-import com.couchbase.client.java.document.JsonDocument;
-import com.couchbase.client.java.document.json.JsonObject;
+import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.Session;
+import com.datastax.driver.mapping.Mapper;
+import com.datastax.driver.mapping.MappingManager;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.sirolf2009.lsw2017.common.model.DBTeam;
 import com.sirolf2009.lsw2017.common.model.PointRequest;
+import io.reactivex.subjects.PublishSubject;
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
+import java.util.Date;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.xtend.lib.annotations.Accessors;
-import org.eclipse.xtext.xbase.lib.Exceptions;
+import org.eclipse.xtext.xbase.lib.ObjectExtensions;
 import org.eclipse.xtext.xbase.lib.Pair;
+import org.eclipse.xtext.xbase.lib.Procedures.Procedure1;
 import org.eclipse.xtext.xbase.lib.Pure;
-import rx.Observable;
-import rx.functions.Action1;
-import rx.functions.Func1;
-import rx.observables.BlockingObservable;
-import rx.subjects.PublishSubject;
 
 @SuppressWarnings("all")
 public class Database implements Closeable {
   private final static Logger log = LogManager.getLogger();
   
-  private final CouchbaseCluster cluster;
+  private final Cluster cluster;
   
-  private final Bucket bucket;
+  private final Session session;
+  
+  private final Mapper<DBTeam> mapper;
   
   @Accessors
-  private final PublishSubject<Pair<PointRequest, JsonDocument>> pointsAwarded;
+  private final PublishSubject<Pair<PointRequest, DBTeam>> pointsAwarded;
+  
+  @Accessors
+  private final PublishSubject<Pair<PointRequest, DBTeam>> pointsDenied;
   
   public Database() {
-    CouchbaseCluster _create = CouchbaseCluster.create("localhost");
-    this.cluster = _create;
-    Bucket _openBucket = this.cluster.openBucket("lsw-2017", "iwanttodie123");
-    this.bucket = _openBucket;
-    BucketManager _bucketManager = this.bucket.bucketManager();
-    _bucketManager.createN1qlPrimaryIndex(true, false);
-    PublishSubject<Pair<PointRequest, JsonDocument>> _create_1 = PublishSubject.<Pair<PointRequest, JsonDocument>>create();
-    this.pointsAwarded = _create_1;
+    this.cluster = Cluster.builder().addContactPoints("localhost").build();
+    this.session = this.cluster.connect("lsw2017");
+    final MappingManager manager = new MappingManager(this.session);
+    this.mapper = manager.<DBTeam>mapper(DBTeam.class);
+    this.pointsAwarded = PublishSubject.<Pair<PointRequest, DBTeam>>create();
+    this.pointsDenied = PublishSubject.<Pair<PointRequest, DBTeam>>create();
     Database.log.info("Database connection initialized");
   }
   
-  public void awardPoints(final PointRequest request) {
-    AsyncBucket _async = this.bucket.async();
-    String _teamName = request.getTeamName();
-    Observable<JsonDocument> _get = _async.get(_teamName);
-    final Func1<JsonDocument, JsonDocument> _function = (JsonDocument it) -> {
-      JsonObject _content = it.content();
-      JsonObject _content_1 = it.content();
-      Integer _int = _content_1.getInt("points");
-      int _points = request.getPoints();
-      int _plus = ((_int).intValue() + _points);
-      _content.put("points", _plus);
-      JsonObject _content_2 = it.content();
+  public DBTeam awardPoints(final PointRequest request) {
+    DBTeam _get = this.mapper.get(request.getTeamName());
+    final Procedure1<DBTeam> _function = (DBTeam it) -> {
       long _currentTime = request.getCurrentTime();
-      _content_2.put("lastCheckedIn", _currentTime);
-      JsonObject _content_3 = it.content();
-      JsonObject _content_4 = it.content();
-      Integer _int_1 = _content_4.getInt("checkedInCount");
-      int _plus_1 = ((_int_1).intValue() + 1);
-      _content_3.put("checkedInCount", _plus_1);
-      return it;
-    };
-    Observable<JsonDocument> _map = _get.<JsonDocument>map(_function);
-    final Func1<JsonDocument, JsonDocument> _function_1 = (JsonDocument it) -> {
-      return this.bucket.<JsonDocument>replace(it, 1, TimeUnit.SECONDS);
-    };
-    Observable<JsonDocument> _map_1 = _map.<JsonDocument>map(_function_1);
-    BlockingObservable<JsonDocument> _blocking = _map_1.toBlocking();
-    final Action1<JsonDocument> _function_2 = (JsonDocument it) -> {
-      try {
-        Pair<PointRequest, JsonDocument> _mappedTo = Pair.<PointRequest, JsonDocument>of(request, it);
+      long _time = it.lastCheckedIn.getTime();
+      long _minus = (_currentTime - _time);
+      long _millis = Duration.ofMinutes(1).toMillis();
+      boolean _greaterThan = (_minus > _millis);
+      if (_greaterThan) {
+        int _points = it.points;
+        int _points_1 = request.getPoints();
+        it.points = (_points + _points_1);
+        long _currentTime_1 = request.getCurrentTime();
+        Date _date = new Date(_currentTime_1);
+        it.lastCheckedIn = _date;
+        it.timesCheckedIn++;
+        this.save(it);
+        Pair<PointRequest, DBTeam> _mappedTo = Pair.<PointRequest, DBTeam>of(request, it);
         this.pointsAwarded.onNext(_mappedTo);
-      } catch (final Throwable _t) {
-        if (_t instanceof Exception) {
-          final Exception e = (Exception)_t;
-          Database.log.error("Failed to publish points awarded", e);
-        } else {
-          throw Exceptions.sneakyThrow(_t);
-        }
+      } else {
+        Pair<PointRequest, DBTeam> _mappedTo_1 = Pair.<PointRequest, DBTeam>of(request, it);
+        this.pointsDenied.onNext(_mappedTo_1);
       }
     };
-    final Action1<Throwable> _function_3 = (Throwable it) -> {
-      Database.log.error("Failed to award points", it);
+    return ObjectExtensions.<DBTeam>operator_doubleArrow(_get, _function);
+  }
+  
+  public int getPoints(final String teamName) {
+    return this.getTeam(teamName).points;
+  }
+  
+  public void createNewTeam(final String teamName) {
+    DBTeam _dBTeam = new DBTeam();
+    final Procedure1<DBTeam> _function = (DBTeam it) -> {
+      it.teamName = teamName;
+      it.teamNumber = 0;
+      Date _date = new Date(0);
+      it.lastCheckedIn = _date;
+      it.points = 0;
+      it.timesCheckedIn = 0;
     };
-    _blocking.subscribe(_function_2, _function_3);
-  }
-  
-  public Integer getPoints(final String teamName) {
-    JsonDocument _team = this.getTeam(teamName);
-    return this.getPoints(_team);
-  }
-  
-  public JsonDocument createNewTeam(final String teamName) {
-    JsonDocument _xblockexpression = null;
-    {
-      JsonObject _create = JsonObject.create();
-      JsonObject _put = _create.put("points", 0);
-      JsonObject _put_1 = _put.put("lastCheckedIn", 0);
-      final JsonObject team = _put_1.put("checkedInCount", 0);
-      JsonDocument _create_1 = JsonDocument.create(teamName, team);
-      _xblockexpression = this.bucket.<JsonDocument>upsert(_create_1);
-    }
-    return _xblockexpression;
+    final DBTeam team = ObjectExtensions.<DBTeam>operator_doubleArrow(_dBTeam, _function);
+    this.save(team);
   }
   
   public boolean doesTeamExist(final String teamName) {
-    return this.bucket.exists(teamName);
+    DBTeam _team = this.getTeam(teamName);
+    return (_team != null);
   }
   
-  public JsonDocument getTeam(final String teamName) {
-    return this.bucket.get(teamName);
+  public DBTeam getTeam(final String teamName) {
+    return this.mapper.get(teamName);
   }
   
-  public Integer getPoints(final JsonDocument document) {
-    JsonObject _content = document.content();
-    Object _get = _content.get("points");
-    return ((Integer) _get);
+  public void save(final DBTeam team) {
+    this.mapper.save(team);
+  }
+  
+  public ListenableFuture<Void> saveAsync(final DBTeam team) {
+    return this.mapper.saveAsync(team);
   }
   
   @Override
   public void close() throws IOException {
-    this.bucket.close();
-    this.cluster.disconnect();
+    this.cluster.close();
   }
   
   @Pure
-  public PublishSubject<Pair<PointRequest, JsonDocument>> getPointsAwarded() {
+  public PublishSubject<Pair<PointRequest, DBTeam>> getPointsAwarded() {
     return this.pointsAwarded;
+  }
+  
+  @Pure
+  public PublishSubject<Pair<PointRequest, DBTeam>> getPointsDenied() {
+    return this.pointsDenied;
   }
 }

@@ -2,14 +2,12 @@ package com.sirolf2009.lsw2017.client;
 
 import com.google.common.base.Objects;
 import com.sirolf2009.lsw2017.client.net.Connector;
-import com.sirolf2009.lsw2017.common.ServerProxy;
 import com.sirolf2009.lsw2017.common.model.PointRequest;
 import eu.hansolo.enzo.notification.Notification;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.InvalidationListener;
 import javafx.beans.Observable;
-import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
@@ -59,8 +57,7 @@ public class Client extends Application {
         Label _label = new Label("");
         final Procedure1<Label> _function_2 = (Label it_2) -> {
           final Procedure1<Object> _function_3 = (Object listener) -> {
-            SimpleBooleanProperty _connected = connector.getConnected();
-            boolean _get = _connected.get();
+            boolean _get = connector.getConnected().get();
             if (_get) {
               Image _image = new Image("green_dot.png");
               ImageView _imageView = new ImageView(_image);
@@ -75,11 +72,10 @@ public class Client extends Application {
           };
           final Procedure1<Object> setConnection = _function_3;
           setConnection.apply(null);
-          SimpleBooleanProperty _connected = connector.getConnected();
           final InvalidationListener _function_4 = (Observable listener) -> {
             setConnection.apply(listener);
           };
-          _connected.addListener(_function_4);
+          connector.getConnected().addListener(_function_4);
         };
         Label _doubleArrow = ObjectExtensions.<Label>operator_doubleArrow(_label, _function_2);
         _children_1.add(_doubleArrow);
@@ -99,15 +95,12 @@ public class Client extends Application {
       final TextField points = ObjectExtensions.<TextField>operator_doubleArrow(_textField_1, _function_3);
       final Procedure1<Event> _function_4 = (Event it_1) -> {
         try {
-          ServerProxy _proxy = connector.getProxy();
-          com.esotericsoftware.kryonet.Client _client = connector.getClient();
-          int _iD = _client.getID();
+          int _iD = connector.getClient().getID();
           String _text = team.getText();
-          String _text_1 = points.getText();
-          int _parseInt = Integer.parseInt(_text_1);
+          int _parseInt = Integer.parseInt(points.getText());
           long _currentTimeMillis = System.currentTimeMillis();
           PointRequest _pointRequest = new PointRequest(_iD, _text, _parseInt, _currentTimeMillis);
-          _proxy.requestPoints(_pointRequest);
+          connector.getProxy().requestPoints(_pointRequest);
           team.clear();
           points.clear();
           team.requestFocus();
@@ -118,10 +111,7 @@ public class Client extends Application {
               Notification.Notifier.INSTANCE.notifyError("Failure!", "Uh oh, something went wrong");
             };
             Platform.runLater(_function_5);
-            String _text_2 = team.getText();
-            String _text_3 = points.getText();
-            long _currentTimeMillis_1 = System.currentTimeMillis();
-            this.log.error("Failed to send point request to the server. Team={} Points={} Time={}", _text_2, _text_3, Long.valueOf(_currentTimeMillis_1), e);
+            this.log.error("Failed to send point request to the server. Team={} Points={} Time={}", team.getText(), points.getText(), Long.valueOf(System.currentTimeMillis()), e);
           } else {
             throw Exceptions.sneakyThrow(_t);
           }

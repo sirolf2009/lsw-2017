@@ -1,8 +1,6 @@
 package com.sirolf2009.lsw2017.leaderboard
 
-import com.couchbase.client.core.CouchbaseException
-import com.couchbase.client.java.CouchbaseCluster
-import com.couchbase.client.java.query.N1qlQuery
+import com.datastax.driver.core.Cluster
 import com.sirolf2009.lsw2017.leaderboard.model.Team
 import javafx.collections.FXCollections
 import javafx.scene.Scene
@@ -12,9 +10,8 @@ import javafx.scene.layout.ColumnConstraints
 import javafx.scene.layout.GridPane
 import javafx.scene.layout.RowConstraints
 import javafx.stage.Stage
-import rx.Observable
 import xtendfx.FXApp
-import rx.schedulers.Schedulers
+import java.util.Date
 
 @FXApp class Leaderboard {
 	
@@ -23,24 +20,34 @@ import rx.schedulers.Schedulers
 	override start(Stage it) throws Exception {
 		title = "LSW 2017 leaderboard"
 		
-		val cluster = CouchbaseCluster.create("localhost")
-		val bucket = cluster.openBucket("lsw-2017", "iwanttodie123")
+		val cluster = Cluster.builder.addContactPoint("localhost").build
+		val session = cluster.connect("lsw2017")
 		
 		new Thread[
 			while(true) {
 				try {
-					bucket.async.query(N1qlQuery.simple("SELECT table.*, meta(table).id FROM `lsw-2017` table order by points desc limit 40")).flatMap[result|
-						result.errors.flatMap[e|Observable.error(new CouchbaseException("N1QL Error/Warning: " + e))].switchIfEmpty(result.rows)
-					].map[value].map[
-						return new Team(getInt("points"), getString("id"), "TODO", System.currentTimeMillis)
-					].subscribeOn(Schedulers.computation).subscribe[
+					session.execute("SELECT * FROM teams").all.map[
+						new Team(it.getInt("points"), it.getString("teamname"), "TODO", it.get("lastcheckedin", Date).time)
+					].forEach[
 						val existing = testData.findFirst[data|data.name.equals(name)]
-						if(existing == null) {
+						if(existing === null) {
 							testData.add(it)
 						} else {
 							existing.likes = likes
 						}
 					]
+//					bucket.async.query(N1qlQuery.simple("SELECT table.*, meta(table).id FROM `lsw-2017` table order by points desc limit 40")).flatMap[result|
+//						result.errors.flatMap[e|Observable.error(new CouchbaseException("N1QL Error/Warning: " + e))].switchIfEmpty(result.rows)
+//					].map[value].map[
+//						return new Team(getInt("points"), getString("id"), "TODO", System.currentTimeMillis)
+//					].subscribeOn(Schedulers.computation).subscribe[
+//						val existing = testData.findFirst[data|data.name.equals(name)]
+//						if(existing === null) {
+//							testData.add(it)
+//						} else {
+//							existing.likes = likes
+//						}
+//					]
 					Thread.sleep(1000)
 				} catch(Exception e) {
 					e.printStackTrace()

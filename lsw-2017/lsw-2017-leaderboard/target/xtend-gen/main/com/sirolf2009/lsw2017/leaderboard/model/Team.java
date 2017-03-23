@@ -6,9 +6,17 @@ import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleLongProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import org.eclipse.xtend.lib.annotations.Accessors;
+import org.eclipse.xtend.lib.annotations.EqualsHashCode;
+import org.eclipse.xtend.lib.annotations.ToString;
+import org.eclipse.xtext.xbase.lib.Pure;
+import org.eclipse.xtext.xbase.lib.util.ToStringBuilder;
 import xtendfx.beans.FXBindable;
 
 @FXBindable
+@ToString
+@EqualsHashCode
+@Accessors
 @SuppressWarnings("all")
 public class Team {
   public Team(final int likes, final String name, final String subcamp, final long lastCheckedIn) {
@@ -92,5 +100,31 @@ public class Team {
     	this.lastCheckedInProperty = new SimpleLongProperty(this, "lastCheckedIn", DEFAULT_LASTCHECKEDIN);
     }
     return this.lastCheckedInProperty;
+  }
+  
+  @Override
+  @Pure
+  public String toString() {
+    ToStringBuilder b = new ToStringBuilder(this);
+    return b.toString();
+  }
+  
+  @Override
+  @Pure
+  public boolean equals(final Object obj) {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    return true;
+  }
+  
+  @Override
+  @Pure
+  public int hashCode() {
+    int result = 1;
+    return result;
   }
 }

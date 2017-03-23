@@ -8,6 +8,7 @@ import com.sirolf2009.lsw2017.common.Network;
 import com.sirolf2009.lsw2017.common.ServerProxy;
 import com.sirolf2009.lsw2017.common.model.NotifyBattleground;
 import com.sirolf2009.lsw2017.common.model.NotifySuccesful;
+import com.sirolf2009.lsw2017.common.model.NotifyWait;
 import eu.hansolo.enzo.notification.Notification;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -79,6 +80,16 @@ public class Connector {
               Notification.Notifier.INSTANCE.notifyWarning("Battleground", _plus);
             };
             Platform.runLater(_function_1);
+          } else {
+            if ((packet instanceof NotifyWait)) {
+              final NotifyWait wait = ((NotifyWait) packet);
+              final Runnable _function_2 = () -> {
+                String _teamName = wait.getTeamName();
+                String _plus = (_teamName + " must wait a little while longer before scanning");
+                Notification.Notifier.INSTANCE.notifyError("Denied!", _plus);
+              };
+              Platform.runLater(_function_2);
+            }
           }
         }
       }
@@ -92,8 +103,7 @@ public class Connector {
         while ((!this.client.isConnected())) {
           try {
             this.client.connect(5000, "localhost", 1234);
-            ServerProxy _remoteObject = ObjectSpace.<ServerProxy>getRemoteObject(this.client, 1, ServerProxy.class);
-            this.proxy = _remoteObject;
+            this.proxy = ObjectSpace.<ServerProxy>getRemoteObject(this.client, 1, ServerProxy.class);
           } catch (final Throwable _t) {
             if (_t instanceof Exception) {
               final Exception e = (Exception)_t;
@@ -108,8 +118,7 @@ public class Connector {
         throw Exceptions.sneakyThrow(_e);
       }
     };
-    Thread _thread = new Thread(_function);
-    _thread.start();
+    new Thread(_function).start();
   }
   
   @Pure

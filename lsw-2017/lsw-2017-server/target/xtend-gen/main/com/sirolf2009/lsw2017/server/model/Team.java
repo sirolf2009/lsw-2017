@@ -5,6 +5,7 @@ import org.eclipse.xtext.xbase.lib.Pure;
 import org.eclipse.xtext.xbase.lib.util.ToStringBuilder;
 
 @Data
+@Deprecated
 @SuppressWarnings("all")
 public class Team {
   private final String teamName;

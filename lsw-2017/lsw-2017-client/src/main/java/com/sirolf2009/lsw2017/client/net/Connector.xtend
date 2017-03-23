@@ -14,6 +14,7 @@ import org.eclipse.xtend.lib.annotations.Accessors
 import com.sirolf2009.lsw2017.common.model.NotifySuccesful
 import eu.hansolo.enzo.notification.Notification.Notifier
 import com.sirolf2009.lsw2017.common.model.NotifyBattleground
+import com.sirolf2009.lsw2017.common.model.NotifyWait
 
 class Connector {
 
@@ -54,6 +55,11 @@ class Connector {
 					val battleground = packet as NotifyBattleground
 					Platform.runLater [
 						Notifier.INSTANCE.notifyWarning("Battleground", battleground.teamName + " must now go to the battleground")
+					]
+				} else if(packet instanceof NotifyWait) {
+					val wait = packet as NotifyWait
+					Platform.runLater [
+						Notifier.INSTANCE.notifyError("Denied!", wait.teamName + " must wait a little while longer before scanning")
 					]
 				}
 			}
