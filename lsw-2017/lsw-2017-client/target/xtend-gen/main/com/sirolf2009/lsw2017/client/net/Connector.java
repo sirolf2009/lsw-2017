@@ -4,14 +4,16 @@ import com.esotericsoftware.kryonet.Client;
 import com.esotericsoftware.kryonet.Connection;
 import com.esotericsoftware.kryonet.Listener;
 import com.esotericsoftware.kryonet.rmi.ObjectSpace;
+import com.github.plushaze.traynotification.notification.Notifications;
+import com.github.plushaze.traynotification.notification.TrayNotification;
 import com.sirolf2009.lsw2017.common.Network;
 import com.sirolf2009.lsw2017.common.ServerProxy;
 import com.sirolf2009.lsw2017.common.model.NotifyBattleground;
 import com.sirolf2009.lsw2017.common.model.NotifySuccesful;
 import com.sirolf2009.lsw2017.common.model.NotifyWait;
-import eu.hansolo.enzo.notification.Notification;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.util.Duration;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.xtend.lib.annotations.Accessors;
@@ -63,30 +65,42 @@ public class Connector {
         if ((packet instanceof NotifySuccesful)) {
           final NotifySuccesful succes = ((NotifySuccesful) packet);
           final Runnable _function = () -> {
+            final TrayNotification notification = new TrayNotification();
+            notification.setTitle("Success");
             String _teamName = succes.getTeamName();
             String _plus = (_teamName + " now has ");
             int _points = succes.getPoints();
             String _plus_1 = (_plus + Integer.valueOf(_points));
             String _plus_2 = (_plus_1 + " points");
-            Notification.Notifier.INSTANCE.notifySuccess("Succes!", _plus_2);
+            notification.setMessage(_plus_2);
+            notification.setNotification(Notifications.SUCCESS);
+            notification.showAndDismiss(Duration.seconds(1));
           };
           Platform.runLater(_function);
         } else {
           if ((packet instanceof NotifyBattleground)) {
             final NotifyBattleground battleground = ((NotifyBattleground) packet);
             final Runnable _function_1 = () -> {
+              final TrayNotification notification = new TrayNotification();
+              notification.setTitle("Battleground");
               String _teamName = battleground.getTeamName();
               String _plus = (_teamName + " must now go to the battleground");
-              Notification.Notifier.INSTANCE.notifyWarning("Battleground", _plus);
+              notification.setMessage(_plus);
+              notification.setNotification(Notifications.NOTICE);
+              notification.showAndDismiss(Duration.seconds(1));
             };
             Platform.runLater(_function_1);
           } else {
             if ((packet instanceof NotifyWait)) {
               final NotifyWait wait = ((NotifyWait) packet);
               final Runnable _function_2 = () -> {
+                final TrayNotification notification = new TrayNotification();
+                notification.setTitle("Denied!");
                 String _teamName = wait.getTeamName();
                 String _plus = (_teamName + " must wait a little while longer before scanning");
-                Notification.Notifier.INSTANCE.notifyError("Denied!", _plus);
+                notification.setMessage(_plus);
+                notification.setNotification(Notifications.ERROR);
+                notification.showAndDismiss(Duration.seconds(1));
               };
               Platform.runLater(_function_2);
             }

@@ -4,6 +4,7 @@ import com.datastax.driver.core.Cluster
 import com.datastax.driver.core.Session
 import com.datastax.driver.mapping.Mapper
 import com.datastax.driver.mapping.MappingManager
+import com.sirolf2009.lsw2017.common.model.DBTeam
 import com.sirolf2009.lsw2017.common.model.PointRequest
 import io.reactivex.subjects.PublishSubject
 import java.io.Closeable
@@ -13,7 +14,6 @@ import java.util.Date
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import org.eclipse.xtend.lib.annotations.Accessors
-import com.sirolf2009.lsw2017.common.model.DBTeam
 
 class Database implements Closeable {
 
@@ -27,9 +27,9 @@ class Database implements Closeable {
 	@Accessors val PublishSubject<Pair<PointRequest, DBTeam>> pointsDenied
 
 	new() {
-		cluster = Cluster.builder.addContactPoints("localhost").build()
+		cluster = Cluster.builder.addContactPoints("localhost").withPort(32769).build()
 		session = cluster.connect("lsw2017")
-		
+		 
 		val manager = new MappingManager(session)
 		mapper = manager.mapper(DBTeam)
 		

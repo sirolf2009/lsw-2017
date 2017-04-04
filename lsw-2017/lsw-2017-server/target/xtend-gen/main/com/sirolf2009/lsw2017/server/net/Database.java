@@ -37,7 +37,7 @@ public class Database implements Closeable {
   private final PublishSubject<Pair<PointRequest, DBTeam>> pointsDenied;
   
   public Database() {
-    this.cluster = Cluster.builder().addContactPoints("localhost").build();
+    this.cluster = Cluster.builder().addContactPoints("localhost").withPort(32769).build();
     this.session = this.cluster.connect("lsw2017");
     final MappingManager manager = new MappingManager(this.session);
     this.mapper = manager.<DBTeam>mapper(DBTeam.class);

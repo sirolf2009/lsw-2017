@@ -1,9 +1,10 @@
 package com.sirolf2009.lsw2017.client;
 
+import com.github.plushaze.traynotification.notification.Notifications;
+import com.github.plushaze.traynotification.notification.TrayNotification;
 import com.google.common.base.Objects;
 import com.sirolf2009.lsw2017.client.net.Connector;
 import com.sirolf2009.lsw2017.common.model.PointRequest;
-import eu.hansolo.enzo.notification.Notification;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.InvalidationListener;
@@ -28,6 +29,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.xtext.xbase.lib.Exceptions;
@@ -108,10 +110,15 @@ public class Client extends Application {
           if (_t instanceof Exception) {
             final Exception e = (Exception)_t;
             final Runnable _function_5 = () -> {
-              Notification.Notifier.INSTANCE.notifyError("Failure!", "Uh oh, something went wrong");
+              final TrayNotification notification = new TrayNotification();
+              notification.setTitle("Failure!");
+              notification.setMessage("Uh oh, something went wrong");
+              notification.setNotification(Notifications.ERROR);
+              notification.showAndDismiss(Duration.seconds(1));
             };
             Platform.runLater(_function_5);
-            this.log.error("Failed to send point request to the server. Team={} Points={} Time={}", team.getText(), points.getText(), Long.valueOf(System.currentTimeMillis()), e);
+            this.log.error("Failed to send point request to the server. Team={} Points={} Time={}", team.getText(), 
+              points.getText(), Long.valueOf(System.currentTimeMillis()), e);
           } else {
             throw Exceptions.sneakyThrow(_t);
           }
