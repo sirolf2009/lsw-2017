@@ -1,61 +1,59 @@
 package com.sirolf2009.lsw2017.server.net
 
-import com.esotericsoftware.kryonet.Connection
-import com.esotericsoftware.kryonet.Listener
-import com.esotericsoftware.kryonet.Server
-import com.sirolf2009.lsw2017.common.Network
-import java.util.Arrays
-import java.util.Properties
-import org.apache.kafka.clients.consumer.ConsumerConfig
-import org.apache.kafka.clients.consumer.KafkaConsumer
-import org.apache.kafka.common.serialization.StringDeserializer
+import com.google.gson.Gson
+import com.rabbitmq.client.AMQP.BasicProperties
+import com.rabbitmq.client.ConnectionFactory
+import com.rabbitmq.client.DefaultConsumer
+import com.rabbitmq.client.Envelope
+import com.sirolf2009.lsw2017.common.Queues
+import com.sirolf2009.lsw2017.common.model.PointRequest
+import java.io.IOException
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import org.eclipse.xtend.lib.annotations.Accessors
 
+import static com.sirolf2009.lsw2017.common.Queues.*
+import io.reactivex.subjects.Subject
+import io.reactivex.subjects.ReplaySubject
+import com.sirolf2009.lsw2017.common.model.Handshake
+import com.rabbitmq.client.Channel
+
 @Accessors class Connector {
 
 	static val Logger log = LogManager.getLogger()
-
-	val Facade facade
-	val Server server
+	
+	val Channel channel
+	val Subject<Handshake> connected
+	val Subject<PointRequest> pointRequest
 
 	new() {
-		val configProperties = new Properties()
-		configProperties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "digital:2181")
-		configProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.name)
-		configProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.name)
-		configProperties.put(ConsumerConfig.GROUP_ID_CONFIG, "connected-consumer")
-		configProperties.put(ConsumerConfig.CLIENT_ID_CONFIG, "simple")
-		
-		println("listening")
-		val consumer  = new KafkaConsumer<String, String>(configProperties);
-        consumer.subscribe(Arrays.asList("connected"));
-		println("listening")
-        val records = consumer.poll(10000);
-		println("received")
-        records.forEach[println(it)]
-
-		this.facade = new Facade()
-		this.server = new Server() {
-			override protected newConnection() {
-				return facade
-			}
-		}
-		Network.register(server)
-		server.start()
-		server.addListener(new Listener() {
-			override connected(Connection connection) {
-				connection.name = connection.remoteAddressTCP + ""
-				log.info(connection + " connected")
-			}
-
-			override disconnected(Connection connection) {
-				log.info(connection + " disconnected")
+		val factory = new ConnectionFactory()
+		factory.host = "localhost"
+		factory.port = 5672
+		val connection = factory.newConnection()
+		channel = connection.createChannel()
+		Queues.declareQueues(channel)
+		connected = ReplaySubject.create()
+		channel.basicConsume(CONNECTED, true, new DefaultConsumer(channel) {
+			override handleDelivery(String consumerTag, Envelope envelope, BasicProperties properties, byte[] body) throws IOException {
+				connected.onNext(new Gson().fromJson(new String(body), Handshake))
 			}
 		})
-		server.bind(1234)
+		pointRequest = ReplaySubject.create()
+		channel.basicConsume(POINT_REQUEST, true, new DefaultConsumer(channel) {
+			override handleDelivery(String consumerTag, Envelope envelope, BasicProperties properties, byte[] body) throws IOException {
+				pointRequest.onNext(new Gson().fromJson(new String(body), PointRequest))
+			}
+		})
 		log.info("Connector initialized")
+	}
+	
+	def send(String channelName, Object object) {
+		channel.basicPublish("", channelName, null, new Gson().toJson(object).bytes)
+	}
+	
+	def send(String channelName, String message) {
+		channel.basicPublish("", channelName, null, message.bytes)
 	}
 
 }

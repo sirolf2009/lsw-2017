@@ -11,7 +11,7 @@ import org.eclipse.xtext.xbase.lib.util.ToStringBuilder;
 @EqualsHashCode
 @SuppressWarnings("all")
 public class PointRequest {
-  private int clientID;
+  private String hostName;
   
   private String teamName;
   
@@ -22,20 +22,20 @@ public class PointRequest {
   public PointRequest() {
   }
   
-  public PointRequest(final int clientID, final String teamName, final int points, final long currentTime) {
-    this.clientID = clientID;
+  public PointRequest(final String hostName, final String teamName, final int points, final long currentTime) {
+    this.hostName = hostName;
     this.teamName = teamName;
     this.points = points;
     this.currentTime = currentTime;
   }
   
   @Pure
-  public int getClientID() {
-    return this.clientID;
+  public String getHostName() {
+    return this.hostName;
   }
   
-  public void setClientID(final int clientID) {
-    this.clientID = clientID;
+  public void setHostName(final String hostName) {
+    this.hostName = hostName;
   }
   
   @Pure
@@ -69,7 +69,7 @@ public class PointRequest {
   @Pure
   public String toString() {
     ToStringBuilder b = new ToStringBuilder(this);
-    b.add("clientID", this.clientID);
+    b.add("hostName", this.hostName);
     b.add("teamName", this.teamName);
     b.add("points", this.points);
     b.add("currentTime", this.currentTime);
@@ -86,7 +86,10 @@ public class PointRequest {
     if (getClass() != obj.getClass())
       return false;
     PointRequest other = (PointRequest) obj;
-    if (other.clientID != this.clientID)
+    if (this.hostName == null) {
+      if (other.hostName != null)
+        return false;
+    } else if (!this.hostName.equals(other.hostName))
       return false;
     if (this.teamName == null) {
       if (other.teamName != null)
@@ -105,7 +108,7 @@ public class PointRequest {
   public int hashCode() {
     final int prime = 31;
     int result = 1;
-    result = prime * result + this.clientID;
+    result = prime * result + ((this.hostName== null) ? 0 : this.hostName.hashCode());
     result = prime * result + ((this.teamName== null) ? 0 : this.teamName.hashCode());
     result = prime * result + this.points;
     result = prime * result + (int) (this.currentTime ^ (this.currentTime >>> 32));

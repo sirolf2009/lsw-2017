@@ -3,14 +3,11 @@ package com.sirolf2009.lsw2017.client;
 import com.github.plushaze.traynotification.notification.Notifications;
 import com.github.plushaze.traynotification.notification.TrayNotification;
 import com.google.common.base.Objects;
+import com.kstruct.gethostname4j.Hostname;
 import com.sirolf2009.lsw2017.client.net.Connector;
 import com.sirolf2009.lsw2017.common.model.PointRequest;
-import java.net.NetworkInterface;
-import java.util.Properties;
 import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.beans.InvalidationListener;
-import javafx.beans.Observable;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
@@ -19,11 +16,8 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
-import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
@@ -32,14 +26,9 @@ import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.util.Duration;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.xtext.xbase.lib.Exceptions;
-import org.eclipse.xtext.xbase.lib.InputOutput;
 import org.eclipse.xtext.xbase.lib.ObjectExtensions;
 import org.eclipse.xtext.xbase.lib.Procedures.Procedure1;
 import xtendfx.FXApp;
@@ -53,17 +42,6 @@ public class Client extends Application {
   public void start(final Stage stage) throws Exception {
     stage.setTitle("LSW 2017");
     Application.setUserAgentStylesheet(Application.STYLESHEET_CASPIAN);
-    final Properties config = new Properties();
-    config.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "digital:2181");
-    config.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
-    config.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
-    InputOutput.<String>println("sending");
-    final KafkaProducer<Object, String> producer = new KafkaProducer<Object, String>(config);
-    String _displayName = NetworkInterface.getNetworkInterfaces().nextElement().getDisplayName();
-    ProducerRecord<Object, String> _producerRecord = new ProducerRecord<Object, String>("connected", _displayName);
-    producer.send(_producerRecord);
-    producer.close();
-    InputOutput.<String>println("send");
     final Connector connector = new Connector();
     StackPane _stackPane = new StackPane();
     final Procedure1<StackPane> _function = (StackPane it) -> {
@@ -73,32 +51,6 @@ public class Client extends Application {
       StackPane _stackPane_1 = new StackPane();
       final Procedure1<StackPane> _function_1 = (StackPane it_1) -> {
         it_1.setAlignment(Pos.TOP_RIGHT);
-        ObservableList<Node> _children_1 = it_1.getChildren();
-        Label _label = new Label("");
-        final Procedure1<Label> _function_2 = (Label it_2) -> {
-          final Procedure1<Object> _function_3 = (Object listener) -> {
-            boolean _get = connector.getConnected().get();
-            if (_get) {
-              Image _image = new Image("green_dot.png");
-              ImageView _imageView = new ImageView(_image);
-              it_2.setGraphic(_imageView);
-              it_2.setText("connected");
-            } else {
-              Image _image_1 = new Image("red_dot.png");
-              ImageView _imageView_1 = new ImageView(_image_1);
-              it_2.setGraphic(_imageView_1);
-              it_2.setText("disconnected");
-            }
-          };
-          final Procedure1<Object> setConnection = _function_3;
-          setConnection.apply(null);
-          final InvalidationListener _function_4 = (Observable listener) -> {
-            setConnection.apply(listener);
-          };
-          connector.getConnected().addListener(_function_4);
-        };
-        Label _doubleArrow = ObjectExtensions.<Label>operator_doubleArrow(_label, _function_2);
-        _children_1.add(_doubleArrow);
       };
       StackPane _doubleArrow = ObjectExtensions.<StackPane>operator_doubleArrow(_stackPane_1, _function_1);
       _children.add(_doubleArrow);
@@ -115,12 +67,12 @@ public class Client extends Application {
       final TextField points = ObjectExtensions.<TextField>operator_doubleArrow(_textField_1, _function_3);
       final Procedure1<Event> _function_4 = (Event it_1) -> {
         try {
-          int _iD = connector.getClient().getID();
+          String _hostname = Hostname.getHostname();
           String _text = team.getText();
           int _parseInt = Integer.parseInt(points.getText());
           long _currentTimeMillis = System.currentTimeMillis();
-          PointRequest _pointRequest = new PointRequest(_iD, _text, _parseInt, _currentTimeMillis);
-          connector.getProxy().requestPoints(_pointRequest);
+          PointRequest _pointRequest = new PointRequest(_hostname, _text, _parseInt, _currentTimeMillis);
+          connector.requestPoints(_pointRequest);
           team.clear();
           points.clear();
           team.requestFocus();

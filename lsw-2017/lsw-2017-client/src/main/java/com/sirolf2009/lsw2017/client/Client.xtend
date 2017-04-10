@@ -4,17 +4,12 @@ import com.github.plushaze.traynotification.notification.Notifications
 import com.github.plushaze.traynotification.notification.TrayNotification
 import com.sirolf2009.lsw2017.client.net.Connector
 import com.sirolf2009.lsw2017.common.model.PointRequest
-import java.net.NetworkInterface
-import java.util.Properties
 import javafx.application.Platform
 import javafx.geometry.Pos
 import javafx.scene.Scene
 import javafx.scene.control.Button
-import javafx.scene.control.Label
 import javafx.scene.control.TextField
 import javafx.scene.control.ToggleButton
-import javafx.scene.image.Image
-import javafx.scene.image.ImageView
 import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyEvent
 import javafx.scene.layout.HBox
@@ -23,12 +18,9 @@ import javafx.scene.layout.VBox
 import javafx.scene.text.Text
 import javafx.stage.Stage
 import javafx.util.Duration
-import org.apache.kafka.clients.producer.KafkaProducer
-import org.apache.kafka.clients.producer.ProducerConfig
-import org.apache.kafka.clients.producer.ProducerRecord
-import org.apache.kafka.common.serialization.StringSerializer
 import org.apache.logging.log4j.LogManager
 import xtendfx.FXApp
+import com.kstruct.gethostname4j.Hostname
 
 @FXApp class Client {
 
@@ -37,19 +29,6 @@ import xtendfx.FXApp
 	override start(Stage stage) throws Exception {
 		stage.title = "LSW 2017"
 		userAgentStylesheet = STYLESHEET_CASPIAN
-		
-		
-		val config = new Properties()
-		config.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "digital:2181")
-		config.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.name)
-		config.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.name)
-		
-		println("sending")
-		val producer = new KafkaProducer(config)
-		producer.send(new ProducerRecord("connected", NetworkInterface.networkInterfaces.nextElement.displayName))
-		producer.close()
-		println("send")
-		
 
 		val connector = new Connector()
 
@@ -57,21 +36,6 @@ import xtendfx.FXApp
 			stylesheets += "client.css"
 			children += new StackPane => [
 				alignment = Pos.TOP_RIGHT
-				children += new Label("") => [
-					val setConnection = [ Object listener |
-						if (connector.connected.get) {
-							graphic = new ImageView(new Image("green_dot.png"))
-							text = "connected"
-						} else {
-							graphic = new ImageView(new Image("red_dot.png"))
-							text = "disconnected"
-						}
-					]
-					setConnection.apply(null)
-					connector.connected.addListener [ listener |
-						setConnection.apply(listener)
-					]
-				]
 			]
 
 			val team = new TextField() => [
@@ -84,9 +48,7 @@ import xtendfx.FXApp
 
 			val sendPointsToServer = [
 				try {
-					connector.proxy.requestPoints(
-						new PointRequest(connector.client.ID, team.text, Integer.parseInt(points.text),
-							System.currentTimeMillis))
+					connector.requestPoints(new PointRequest(Hostname.hostname, team.text, Integer.parseInt(points.text), System.currentTimeMillis))
 					team.clear()
 					points.clear()
 					team.requestFocus()

@@ -1,100 +1,81 @@
 package com.sirolf2009.lsw2017.client.net
 
-import com.esotericsoftware.kryonet.Client
-import com.esotericsoftware.kryonet.Connection
-import com.esotericsoftware.kryonet.Listener
-import com.esotericsoftware.kryonet.rmi.ObjectSpace
 import com.github.plushaze.traynotification.notification.Notifications
 import com.github.plushaze.traynotification.notification.TrayNotification
-import com.sirolf2009.lsw2017.common.Network
-import com.sirolf2009.lsw2017.common.ServerProxy
-import com.sirolf2009.lsw2017.common.model.NotifyBattleground
+import com.google.gson.Gson
+import com.kstruct.gethostname4j.Hostname
+import com.rabbitmq.client.AMQP.BasicProperties
+import com.rabbitmq.client.Channel
+import com.rabbitmq.client.Connection
+import com.rabbitmq.client.ConnectionFactory
+import com.rabbitmq.client.DefaultConsumer
+import com.rabbitmq.client.Envelope
+import com.sirolf2009.lsw2017.common.Queues
+import com.sirolf2009.lsw2017.common.model.Handshake
 import com.sirolf2009.lsw2017.common.model.NotifySuccesful
-import com.sirolf2009.lsw2017.common.model.NotifyWait
+import com.sirolf2009.lsw2017.common.model.PointRequest
+import java.io.Closeable
+import java.io.IOException
 import javafx.application.Platform
-import javafx.beans.property.SimpleBooleanProperty
 import javafx.util.Duration
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
-import org.eclipse.xtend.lib.annotations.Accessors
 
-class Connector {
+import static com.sirolf2009.lsw2017.common.Queues.*
+
+class Connector implements Closeable {
 
 	static val Logger log = LogManager.getLogger()
 
-	@Accessors val Client client
-	@Accessors var ServerProxy proxy
-	@Accessors val SimpleBooleanProperty connected
+	val Connection connection
+	val Channel channel
+	val String acceptedQueue
+	val String deniedQueue
+	val String battlegroundQueue
 
 	new() {
-		connected = new SimpleBooleanProperty(false)
-		
-		client = new Client()
-		client.start()
-		Network.register(client)
-		client.addListener(new Listener() {
-			override connected(Connection arg0) {
-				log.info("connected")
+		val factory = new ConnectionFactory()
+		factory.host = "localhost"
+		factory.port = 5672
+		connection = factory.newConnection()
+		channel = connection.createChannel()
+		Queues.declareQueues(channel)
+		acceptedQueue = channel.queueDeclare().queue
+		deniedQueue = channel.queueDeclare().queue
+		battlegroundQueue = channel.queueDeclare().queue
+		CONNECTED.send(new Handshake(Hostname.hostname, acceptedQueue, deniedQueue, battlegroundQueue))
+
+		channel.basicConsume(acceptedQueue, true, new DefaultConsumer(channel) {
+			override handleDelivery(String consumerTag, Envelope envelope, BasicProperties properties,
+				byte[] body) throws IOException {
+				val notify = new Gson().fromJson(new String(body), NotifySuccesful)
 				Platform.runLater [
-					connected.set(true)
+					val notification = new TrayNotification()
+					notification.title = "Succes"
+					notification.message = '''«notify.teamName» has received «notify.points» points'''
+					notification.notification = Notifications.SUCCESS
+					notification.showAndDismiss(Duration.seconds(1))
 				]
 			}
-
-			override disconnected(Connection arg0) {
-				log.warn("disconnected")
-				Platform.runLater [
-					connected.set(false)
-				]
-				connect()
-			}
-
-			override received(Connection connection, Object packet) {
-				if(packet instanceof NotifySuccesful) {
-					val succes = packet as NotifySuccesful
-					Platform.runLater [
-						val notification = new TrayNotification()
-						notification.title = "Success"
-						notification.message = succes.teamName + " now has " + succes.points + " points"
-						notification.notification = Notifications.SUCCESS
-						notification.showAndDismiss(Duration.seconds(1))
-					]
-				} else if(packet instanceof NotifyBattleground) {
-					val battleground = packet as NotifyBattleground
-					Platform.runLater [
-						val notification = new TrayNotification()
-						notification.title = "Battleground"
-						notification.message = battleground.teamName + " must now go to the battleground"
-						notification.notification = Notifications.NOTICE
-						notification.showAndDismiss(Duration.seconds(1))
-					]
-				} else if(packet instanceof NotifyWait) {
-					val wait = packet as NotifyWait
-					Platform.runLater [
-						val notification = new TrayNotification()
-						notification.title = "Denied!"
-						notification.message = wait.teamName + " must wait a little while longer before scanning"
-						notification.notification = Notifications.ERROR
-						notification.showAndDismiss(Duration.seconds(1))
-					]
-				}
-			}
-
 		})
-		connect()
 	}
 
-	def connect() {
-		new Thread [
-			while(!client.connected) {
-				try {
-					client.connect(5000, "localhost", 1234)
-					proxy = ObjectSpace.getRemoteObject(client, 1, ServerProxy)
-				} catch(Exception e) {
-					log.error("Failed to connect", e)
-					Thread.sleep(1000)
-				}
-			}
-		].start()
+	def requestPoints(PointRequest request) {
+		log.info('''requesting «request»''')
+		POINT_REQUEST.send(request)
+	}
+
+	def send(String channelName, Object object) {
+		channel.basicPublish("", channelName, null, new Gson().toJson(object).bytes)
+	}
+
+	def send(String channelName, String message) {
+		channel.basicPublish("", channelName, null, message.bytes)
+	}
+
+	override close() throws IOException {
+		channel.close()
+		connection.close()
 	}
 
 }

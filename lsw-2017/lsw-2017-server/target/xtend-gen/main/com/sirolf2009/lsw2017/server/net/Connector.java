@@ -1,24 +1,22 @@
 package com.sirolf2009.lsw2017.server.net;
 
-import com.esotericsoftware.kryonet.Connection;
-import com.esotericsoftware.kryonet.Listener;
-import com.esotericsoftware.kryonet.Server;
-import com.sirolf2009.lsw2017.common.Network;
-import com.sirolf2009.lsw2017.server.net.Facade;
-import java.net.InetSocketAddress;
-import java.util.Arrays;
-import java.util.Properties;
-import java.util.function.Consumer;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.common.serialization.StringDeserializer;
+import com.google.gson.Gson;
+import com.rabbitmq.client.AMQP;
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.DefaultConsumer;
+import com.rabbitmq.client.Envelope;
+import com.sirolf2009.lsw2017.common.Queues;
+import com.sirolf2009.lsw2017.common.model.Handshake;
+import com.sirolf2009.lsw2017.common.model.PointRequest;
+import io.reactivex.subjects.ReplaySubject;
+import io.reactivex.subjects.Subject;
+import java.io.IOException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.xtend.lib.annotations.Accessors;
 import org.eclipse.xtext.xbase.lib.Exceptions;
-import org.eclipse.xtext.xbase.lib.InputOutput;
 import org.eclipse.xtext.xbase.lib.Pure;
 
 @Accessors
@@ -26,68 +24,72 @@ import org.eclipse.xtext.xbase.lib.Pure;
 public class Connector {
   private final static Logger log = LogManager.getLogger();
   
-  private final Facade facade;
+  private final Channel channel;
   
-  private final Server server;
+  private final Subject<Handshake> connected;
+  
+  private final Subject<PointRequest> pointRequest;
   
   public Connector() {
     try {
-      final Properties configProperties = new Properties();
-      configProperties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "digital:2181");
-      configProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
-      configProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
-      configProperties.put(ConsumerConfig.GROUP_ID_CONFIG, "connected-consumer");
-      configProperties.put(ConsumerConfig.CLIENT_ID_CONFIG, "simple");
-      InputOutput.<String>println("listening");
-      final KafkaConsumer<String, String> consumer = new KafkaConsumer<String, String>(configProperties);
-      consumer.subscribe(Arrays.<String>asList("connected"));
-      InputOutput.<String>println("listening");
-      final ConsumerRecords<String, String> records = consumer.poll(10000);
-      InputOutput.<String>println("received");
-      final Consumer<ConsumerRecord<String, String>> _function = (ConsumerRecord<String, String> it) -> {
-        InputOutput.<ConsumerRecord<String, String>>println(it);
-      };
-      records.forEach(_function);
-      Facade _facade = new Facade();
-      this.facade = _facade;
-      this.server = new Server() {
+      final ConnectionFactory factory = new ConnectionFactory();
+      factory.setHost("localhost");
+      factory.setPort(5672);
+      final Connection connection = factory.newConnection();
+      this.channel = connection.createChannel();
+      Queues.declareQueues(this.channel);
+      this.connected = ReplaySubject.<Handshake>create();
+      this.channel.basicConsume(Queues.CONNECTED, true, new DefaultConsumer(this.channel) {
         @Override
-        protected Connection newConnection() {
-          return Connector.this.facade;
-        }
-      };
-      Network.register(this.server);
-      this.server.start();
-      this.server.addListener(new Listener() {
-        @Override
-        public void connected(final Connection connection) {
-          InetSocketAddress _remoteAddressTCP = connection.getRemoteAddressTCP();
-          String _plus = (_remoteAddressTCP + "");
-          connection.setName(_plus);
-          String _plus_1 = (connection + " connected");
-          Connector.log.info(_plus_1);
-        }
-        
-        @Override
-        public void disconnected(final Connection connection) {
-          String _plus = (connection + " disconnected");
-          Connector.log.info(_plus);
+        public void handleDelivery(final String consumerTag, final Envelope envelope, final AMQP.BasicProperties properties, final byte[] body) throws IOException {
+          Gson _gson = new Gson();
+          String _string = new String(body);
+          Connector.this.connected.onNext(_gson.<Handshake>fromJson(_string, Handshake.class));
         }
       });
-      this.server.bind(1234);
+      this.pointRequest = ReplaySubject.<PointRequest>create();
+      this.channel.basicConsume(Queues.POINT_REQUEST, true, new DefaultConsumer(this.channel) {
+        @Override
+        public void handleDelivery(final String consumerTag, final Envelope envelope, final AMQP.BasicProperties properties, final byte[] body) throws IOException {
+          Gson _gson = new Gson();
+          String _string = new String(body);
+          Connector.this.pointRequest.onNext(_gson.<PointRequest>fromJson(_string, PointRequest.class));
+        }
+      });
       Connector.log.info("Connector initialized");
     } catch (Throwable _e) {
       throw Exceptions.sneakyThrow(_e);
     }
   }
   
-  @Pure
-  public Facade getFacade() {
-    return this.facade;
+  public void send(final String channelName, final Object object) {
+    try {
+      this.channel.basicPublish("", channelName, null, new Gson().toJson(object).getBytes());
+    } catch (Throwable _e) {
+      throw Exceptions.sneakyThrow(_e);
+    }
+  }
+  
+  public void send(final String channelName, final String message) {
+    try {
+      this.channel.basicPublish("", channelName, null, message.getBytes());
+    } catch (Throwable _e) {
+      throw Exceptions.sneakyThrow(_e);
+    }
   }
   
   @Pure
-  public Server getServer() {
-    return this.server;
+  public Channel getChannel() {
+    return this.channel;
+  }
+  
+  @Pure
+  public Subject<Handshake> getConnected() {
+    return this.connected;
+  }
+  
+  @Pure
+  public Subject<PointRequest> getPointRequest() {
+    return this.pointRequest;
   }
 }
