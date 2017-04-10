@@ -28,6 +28,7 @@ class Connector {
 
 	new() {
 		connected = new SimpleBooleanProperty(false)
+		
 		client = new Client()
 		client.start()
 		Network.register(client)

@@ -4,6 +4,8 @@ import com.github.plushaze.traynotification.notification.Notifications
 import com.github.plushaze.traynotification.notification.TrayNotification
 import com.sirolf2009.lsw2017.client.net.Connector
 import com.sirolf2009.lsw2017.common.model.PointRequest
+import java.net.NetworkInterface
+import java.util.Properties
 import javafx.application.Platform
 import javafx.geometry.Pos
 import javafx.scene.Scene
@@ -21,6 +23,10 @@ import javafx.scene.layout.VBox
 import javafx.scene.text.Text
 import javafx.stage.Stage
 import javafx.util.Duration
+import org.apache.kafka.clients.producer.KafkaProducer
+import org.apache.kafka.clients.producer.ProducerConfig
+import org.apache.kafka.clients.producer.ProducerRecord
+import org.apache.kafka.common.serialization.StringSerializer
 import org.apache.logging.log4j.LogManager
 import xtendfx.FXApp
 
@@ -31,6 +37,19 @@ import xtendfx.FXApp
 	override start(Stage stage) throws Exception {
 		stage.title = "LSW 2017"
 		userAgentStylesheet = STYLESHEET_CASPIAN
+		
+		
+		val config = new Properties()
+		config.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "digital:2181")
+		config.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.name)
+		config.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.name)
+		
+		println("sending")
+		val producer = new KafkaProducer(config)
+		producer.send(new ProducerRecord("connected", NetworkInterface.networkInterfaces.nextElement.displayName))
+		producer.close()
+		println("send")
+		
 
 		val connector = new Connector()
 
