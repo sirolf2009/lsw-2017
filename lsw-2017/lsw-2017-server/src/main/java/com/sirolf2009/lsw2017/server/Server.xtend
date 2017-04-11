@@ -9,6 +9,8 @@ import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import java.util.HashMap
 import com.sirolf2009.lsw2017.common.model.NotifySuccesful
+import com.sirolf2009.lsw2017.common.model.NotifyWait
+import com.sirolf2009.lsw2017.common.model.NotifyBattleground
 
 class Server implements Closeable {
 
@@ -39,45 +41,17 @@ class Server implements Closeable {
 			database.awardPoints(it)
 		]
 		database.pointsAwarded.subscribeOn(Schedulers.io).subscribe [
-			log.info("Awarded " + value.teamName + " " + key.points + " points")
+			log.info("Awarded " + value.teamName + " " + key.points + " points from "+key.hostName)
 			connector.send(acceptedQueues.get(key.hostName), new NotifySuccesful(key.teamName, key.points))
+			if(value.timesCheckedIn % 6 == 0) {
+				log.info(value.teamName + " is now allowed to go to the battleground")
+				connector.send(battlegroundQueues.get(key.hostName), new NotifyBattleground(value.teamName))
+			}
 		]
 		database.pointsDenied.subscribeOn(Schedulers.io).subscribe [
-			log.info("Denied " + value.teamName + " " + key.points + " points")
-			connector.send(acceptedQueues.get(key.hostName), new NotifySuccesful(key.teamName, key.points))
+			log.info("Denied " + value.teamName + " " + key.points + " points from "+key.hostName)
+			connector.send(deniedQueues.get(key.hostName), new NotifyWait(key.teamName))
 		]
-
-//		connector.facade.subject.subscribeOn(Schedulers.computation).subscribe [
-//			log.debug(it)
-//		]
-//		connector.facade.subject.subscribeOn(Schedulers.computation).subscribe [
-//			log.debug(it)
-//			if(!database.doesTeamExist(teamName)) {
-//				log.debug("Creating new team: " + teamName)
-//				database.createNewTeam(teamName)
-//			}
-//			log.debug("Awarding " + teamName + " " + points + " points")
-//			database.awardPoints(it)
-//		]
-//
-//		database.pointsAwarded.subscribeOn(Schedulers.computation).subscribe [
-//			log.info("Awarded " + value.teamName + " " + key.points + " points")
-//			val connection = connector.server.connections.findFirst [ connection |
-//				connection.ID == key.clientID
-//			]
-//			connection.sendTCP(new NotifySuccesful(value.teamName, value.points))
-//			if(value.points % 6 == 0) {
-//				log.info(value.teamName + " is now allowed to go to the battleground")
-////				connection.sendTCP(new NotifyBattleground(value.teamName))
-//			}
-//		]
-//		database.pointsDenied.subscribeOn(Schedulers.computation).subscribe [
-//			log.info("Denied " + value.teamName + " " + key.points + " points")
-////			val connection = connector.server.connections.findFirst [ connection |
-////				connection.ID == key.clientID
-////			]
-////			connection.sendTCP(new NotifyWait(value.teamName))
-//		]
 	}
 
 	override close() throws IOException {

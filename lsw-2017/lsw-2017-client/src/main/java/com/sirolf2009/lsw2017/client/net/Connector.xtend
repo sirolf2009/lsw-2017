@@ -22,6 +22,8 @@ import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 
 import static com.sirolf2009.lsw2017.common.Queues.*
+import com.sirolf2009.lsw2017.common.model.NotifyWait
+import com.sirolf2009.lsw2017.common.model.NotifyBattleground
 
 class Connector implements Closeable {
 
@@ -48,12 +50,40 @@ class Connector implements Closeable {
 		channel.basicConsume(acceptedQueue, true, new DefaultConsumer(channel) {
 			override handleDelivery(String consumerTag, Envelope envelope, BasicProperties properties,
 				byte[] body) throws IOException {
+					println(new String(body))
 				val notify = new Gson().fromJson(new String(body), NotifySuccesful)
 				Platform.runLater [
 					val notification = new TrayNotification()
 					notification.title = "Succes"
 					notification.message = '''«notify.teamName» has received «notify.points» points'''
 					notification.notification = Notifications.SUCCESS
+					notification.showAndDismiss(Duration.seconds(1))
+				]
+			}
+		})
+		channel.basicConsume(deniedQueue, true, new DefaultConsumer(channel) {
+			override handleDelivery(String consumerTag, Envelope envelope, BasicProperties properties,
+				byte[] body) throws IOException {
+					println(new String(body))
+				val notify = new Gson().fromJson(new String(body), NotifyWait)
+				Platform.runLater [
+					val notification = new TrayNotification()
+					notification.title = "Error"
+					notification.message = '''«notify.teamName» must wait a little while longer'''
+					notification.notification = Notifications.ERROR
+					notification.showAndDismiss(Duration.seconds(1))
+				]
+			}
+		})
+		channel.basicConsume(battlegroundQueue, true, new DefaultConsumer(channel) {
+			override handleDelivery(String consumerTag, Envelope envelope, BasicProperties properties,
+				byte[] body) throws IOException {
+				val notify = new Gson().fromJson(new String(body), NotifyBattleground)
+				Platform.runLater [
+					val notification = new TrayNotification()
+					notification.title = "Battleground"
+					notification.message = '''«notify.teamName» must now go to the battleground'''
+					notification.notification = Notifications.INFORMATION
 					notification.showAndDismiss(Duration.seconds(1))
 				]
 			}

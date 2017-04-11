@@ -12,7 +12,9 @@ import com.rabbitmq.client.DefaultConsumer;
 import com.rabbitmq.client.Envelope;
 import com.sirolf2009.lsw2017.common.Queues;
 import com.sirolf2009.lsw2017.common.model.Handshake;
+import com.sirolf2009.lsw2017.common.model.NotifyBattleground;
 import com.sirolf2009.lsw2017.common.model.NotifySuccesful;
+import com.sirolf2009.lsw2017.common.model.NotifyWait;
 import com.sirolf2009.lsw2017.common.model.PointRequest;
 import java.io.Closeable;
 import java.io.IOException;
@@ -22,6 +24,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.xtend2.lib.StringConcatenation;
 import org.eclipse.xtext.xbase.lib.Exceptions;
+import org.eclipse.xtext.xbase.lib.InputOutput;
 
 @SuppressWarnings("all")
 public class Connector implements Closeable {
@@ -54,9 +57,11 @@ public class Connector implements Closeable {
       this.channel.basicConsume(this.acceptedQueue, true, new DefaultConsumer(this.channel) {
         @Override
         public void handleDelivery(final String consumerTag, final Envelope envelope, final AMQP.BasicProperties properties, final byte[] body) throws IOException {
-          Gson _gson = new Gson();
           String _string = new String(body);
-          final NotifySuccesful notify = _gson.<NotifySuccesful>fromJson(_string, NotifySuccesful.class);
+          InputOutput.<String>println(_string);
+          Gson _gson = new Gson();
+          String _string_1 = new String(body);
+          final NotifySuccesful notify = _gson.<NotifySuccesful>fromJson(_string_1, NotifySuccesful.class);
           final Runnable _function = () -> {
             final TrayNotification notification = new TrayNotification();
             notification.setTitle("Succes");
@@ -69,6 +74,48 @@ public class Connector implements Closeable {
             _builder.append(" points");
             notification.setMessage(_builder.toString());
             notification.setNotification(Notifications.SUCCESS);
+            notification.showAndDismiss(Duration.seconds(1));
+          };
+          Platform.runLater(_function);
+        }
+      });
+      this.channel.basicConsume(this.deniedQueue, true, new DefaultConsumer(this.channel) {
+        @Override
+        public void handleDelivery(final String consumerTag, final Envelope envelope, final AMQP.BasicProperties properties, final byte[] body) throws IOException {
+          String _string = new String(body);
+          InputOutput.<String>println(_string);
+          Gson _gson = new Gson();
+          String _string_1 = new String(body);
+          final NotifyWait notify = _gson.<NotifyWait>fromJson(_string_1, NotifyWait.class);
+          final Runnable _function = () -> {
+            final TrayNotification notification = new TrayNotification();
+            notification.setTitle("Error");
+            StringConcatenation _builder = new StringConcatenation();
+            String _teamName = notify.getTeamName();
+            _builder.append(_teamName);
+            _builder.append(" must wait a little while longer");
+            notification.setMessage(_builder.toString());
+            notification.setNotification(Notifications.ERROR);
+            notification.showAndDismiss(Duration.seconds(1));
+          };
+          Platform.runLater(_function);
+        }
+      });
+      this.channel.basicConsume(this.battlegroundQueue, true, new DefaultConsumer(this.channel) {
+        @Override
+        public void handleDelivery(final String consumerTag, final Envelope envelope, final AMQP.BasicProperties properties, final byte[] body) throws IOException {
+          Gson _gson = new Gson();
+          String _string = new String(body);
+          final NotifyBattleground notify = _gson.<NotifyBattleground>fromJson(_string, NotifyBattleground.class);
+          final Runnable _function = () -> {
+            final TrayNotification notification = new TrayNotification();
+            notification.setTitle("Battleground");
+            StringConcatenation _builder = new StringConcatenation();
+            String _teamName = notify.getTeamName();
+            _builder.append(_teamName);
+            _builder.append(" must now go to the battleground");
+            notification.setMessage(_builder.toString());
+            notification.setNotification(Notifications.INFORMATION);
             notification.showAndDismiss(Duration.seconds(1));
           };
           Platform.runLater(_function);
