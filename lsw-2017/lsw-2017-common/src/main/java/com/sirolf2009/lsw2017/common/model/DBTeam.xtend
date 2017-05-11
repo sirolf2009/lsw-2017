@@ -15,5 +15,11 @@ import org.eclipse.xtend.lib.annotations.ToString
 	public int points
 	public Date lastCheckedIn
 	public int timesCheckedIn
+	public boolean battleground1
+	public boolean battleground2
+	public boolean battleground3
+	public boolean battleground4
+	public boolean battleground5
+	public boolean battleground6
 	
 }

@@ -1,0 +1,24 @@
+CREATE TABLE lsw2017.teams (
+    teamname text,
+    lastcheckedin timestamp,
+    points int,
+    teamnumber int,
+    timescheckedin int,
+    battleground1 boolean,
+    battleground2 boolean,
+    battleground3 boolean,
+    battleground4 boolean,
+    battleground5 boolean,
+    battleground6 boolean,
+    PRIMARY KEY ((teamname))
+);
+
+CREATE TABLE lsw2017.queue (
+	battleground int,
+    first_battler text,
+    second_battler text,
+    first_joined timestamp,
+    second_joined timestamp,
+	queue_position int,
+    PRIMARY KEY ((battleground, first_battler))
+);

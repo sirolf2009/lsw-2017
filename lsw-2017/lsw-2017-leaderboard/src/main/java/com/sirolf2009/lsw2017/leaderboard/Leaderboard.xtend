@@ -20,7 +20,7 @@ import java.util.Date
 	override start(Stage it) throws Exception {
 		title = "LSW 2017 leaderboard"
 		
-		val cluster = Cluster.builder.addContactPoint("localhost").build
+		val cluster = Cluster.builder.addContactPoint("localhost").withPort(32769).build
 		val session = cluster.connect("lsw2017")
 		
 		new Thread[

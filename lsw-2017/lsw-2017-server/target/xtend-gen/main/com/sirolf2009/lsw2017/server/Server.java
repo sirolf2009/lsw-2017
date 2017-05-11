@@ -110,6 +110,10 @@ public class Server implements Closeable {
     this.database.getPointsDenied().subscribeOn(Schedulers.io()).subscribe(_function_7);
   }
   
+  public Object moveTeamToBattleground(final Pair<PointRequest, DBTeam> team) {
+    return null;
+  }
+  
   @Override
   public void close() throws IOException {
     this.database.close();

@@ -5,16 +5,23 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.mapping.Mapper;
 import com.datastax.driver.mapping.MappingManager;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.sirolf2009.lsw2017.common.model.DBQueue;
 import com.sirolf2009.lsw2017.common.model.DBTeam;
 import com.sirolf2009.lsw2017.common.model.PointRequest;
 import io.reactivex.subjects.PublishSubject;
 import java.io.Closeable;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.xtend.lib.annotations.Accessors;
+import org.eclipse.xtend2.lib.StringConcatenation;
+import org.eclipse.xtext.xbase.lib.Functions.Function1;
+import org.eclipse.xtext.xbase.lib.Functions.Function2;
+import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.ObjectExtensions;
 import org.eclipse.xtext.xbase.lib.Pair;
 import org.eclipse.xtext.xbase.lib.Procedures.Procedure1;
@@ -28,7 +35,9 @@ public class Database implements Closeable {
   
   private final Session session;
   
-  private final Mapper<DBTeam> mapper;
+  private final Mapper<DBTeam> mapperTeam;
+  
+  private final Mapper<DBQueue> mapperQueue;
   
   @Accessors
   private final PublishSubject<Pair<PointRequest, DBTeam>> pointsAwarded;
@@ -40,14 +49,73 @@ public class Database implements Closeable {
     this.cluster = Cluster.builder().addContactPoints("localhost").withPort(32769).build();
     this.session = this.cluster.connect("lsw2017");
     final MappingManager manager = new MappingManager(this.session);
-    this.mapper = manager.<DBTeam>mapper(DBTeam.class);
+    this.mapperTeam = manager.<DBTeam>mapper(DBTeam.class);
+    this.mapperQueue = manager.<DBQueue>mapper(DBQueue.class);
     this.pointsAwarded = PublishSubject.<Pair<PointRequest, DBTeam>>create();
     this.pointsDenied = PublishSubject.<Pair<PointRequest, DBTeam>>create();
     Database.log.info("Database connection initialized");
   }
   
+  public List<DBQueue> getQueues() {
+    return this.mapperQueue.map(this.session.execute("SELECT * FROM lsw2017.queue")).all();
+  }
+  
+  public List<DBQueue> getQueuesForTeam(final DBTeam team) {
+    StringConcatenation _builder = new StringConcatenation();
+    _builder.append("SELECT * FROM lsw2017.queue WERE battleground in (");
+    int _xifexpression = (int) 0;
+    if (team.battleground1) {
+      _xifexpression = 0;
+    } else {
+      _xifexpression = 1;
+    }
+    int _xifexpression_1 = (int) 0;
+    if (team.battleground2) {
+      _xifexpression_1 = 0;
+    } else {
+      _xifexpression_1 = 2;
+    }
+    int _xifexpression_2 = (int) 0;
+    if (team.battleground3) {
+      _xifexpression_2 = 0;
+    } else {
+      _xifexpression_2 = 3;
+    }
+    int _xifexpression_3 = (int) 0;
+    if (team.battleground4) {
+      _xifexpression_3 = 0;
+    } else {
+      _xifexpression_3 = 4;
+    }
+    int _xifexpression_4 = (int) 0;
+    if (team.battleground5) {
+      _xifexpression_4 = 0;
+    } else {
+      _xifexpression_4 = 5;
+    }
+    int _xifexpression_5 = (int) 0;
+    if (team.battleground6) {
+      _xifexpression_5 = 0;
+    } else {
+      _xifexpression_5 = 6;
+    }
+    final Function1<Integer, Boolean> _function = (Integer it) -> {
+      return Boolean.valueOf(((it).intValue() != 0));
+    };
+    final Function1<Integer, String> _function_1 = (Integer it) -> {
+      return (it + "");
+    };
+    final Function2<String, String, String> _function_2 = (String a, String b) -> {
+      return ((a + ",") + b);
+    };
+    String _reduce = IterableExtensions.<String>reduce(IterableExtensions.<Integer, String>map(IterableExtensions.<Integer>filter(Arrays.<Integer>asList(Integer.valueOf(_xifexpression), Integer.valueOf(_xifexpression_1), Integer.valueOf(_xifexpression_2), Integer.valueOf(_xifexpression_3), Integer.valueOf(_xifexpression_4), Integer.valueOf(_xifexpression_5)), _function), _function_1), _function_2);
+    _builder.append(_reduce);
+    _builder.append(")");
+    return this.mapperQueue.map(this.session.execute(_builder.toString())).all();
+  }
+  
   public DBTeam awardPoints(final PointRequest request) {
-    DBTeam _get = this.mapper.get(request.getTeamName());
+    DBTeam _get = this.mapperTeam.get(request.getTeamName());
     final Procedure1<DBTeam> _function = (DBTeam it) -> {
       long _currentTime = request.getCurrentTime();
       long _time = it.lastCheckedIn.getTime();
@@ -97,15 +165,15 @@ public class Database implements Closeable {
   }
   
   public DBTeam getTeam(final String teamName) {
-    return this.mapper.get(teamName);
+    return this.mapperTeam.get(teamName);
   }
   
   public void save(final DBTeam team) {
-    this.mapper.save(team);
+    this.mapperTeam.save(team);
   }
   
   public ListenableFuture<Void> saveAsync(final DBTeam team) {
-    return this.mapper.saveAsync(team);
+    return this.mapperTeam.saveAsync(team);
   }
   
   @Override

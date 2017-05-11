@@ -34,7 +34,7 @@ public class Leaderboard extends Application {
   @Override
   public void start(final Stage it) throws Exception {
     it.setTitle("LSW 2017 leaderboard");
-    final Cluster cluster = Cluster.builder().addContactPoint("localhost").build();
+    final Cluster cluster = Cluster.builder().addContactPoint("localhost").withPort(32769).build();
     final Session session = cluster.connect("lsw2017");
     final Runnable _function = () -> {
       while (true) {

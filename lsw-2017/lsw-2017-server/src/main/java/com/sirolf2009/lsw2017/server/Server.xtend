@@ -11,7 +11,16 @@ import java.util.HashMap
 import com.sirolf2009.lsw2017.common.model.NotifySuccesful
 import com.sirolf2009.lsw2017.common.model.NotifyWait
 import com.sirolf2009.lsw2017.common.model.NotifyBattleground
+import com.sirolf2009.lsw2017.common.model.PointRequest
+import com.sirolf2009.lsw2017.common.model.DBTeam
 
+//Battleground to be played = the battleground that you have not gone to, and has the smallest queue
+//You will not join a battleground that you have previously played
+//Overview of battlegrounds and who's playing/queueing
+//Generate unique barcodes
+
+//Leaderboard shows how long the game will still last for
+//last 10 mins; the points will dissappear and the timer will go fullscreen
 class Server implements Closeable {
 
 	static val Logger log = LogManager.getLogger()
@@ -52,6 +61,10 @@ class Server implements Closeable {
 			log.info("Denied " + value.teamName + " " + key.points + " points from "+key.hostName)
 			connector.send(deniedQueues.get(key.hostName), new NotifyWait(key.teamName))
 		]
+	}
+	
+	def moveTeamToBattleground(Pair<PointRequest, DBTeam> team) {
+		
 	}
 
 	override close() throws IOException {

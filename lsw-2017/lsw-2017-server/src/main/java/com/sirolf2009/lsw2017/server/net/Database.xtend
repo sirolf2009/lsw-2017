@@ -4,6 +4,7 @@ import com.datastax.driver.core.Cluster
 import com.datastax.driver.core.Session
 import com.datastax.driver.mapping.Mapper
 import com.datastax.driver.mapping.MappingManager
+import com.sirolf2009.lsw2017.common.model.DBQueue
 import com.sirolf2009.lsw2017.common.model.DBTeam
 import com.sirolf2009.lsw2017.common.model.PointRequest
 import io.reactivex.subjects.PublishSubject
@@ -14,6 +15,7 @@ import java.util.Date
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import org.eclipse.xtend.lib.annotations.Accessors
+import java.util.Arrays
 
 class Database implements Closeable {
 
@@ -21,7 +23,8 @@ class Database implements Closeable {
 
 	val Cluster cluster
 	val Session session
-	val Mapper<DBTeam> mapper
+	val Mapper<DBTeam> mapperTeam
+	val Mapper<DBQueue> mapperQueue
 	
 	@Accessors val PublishSubject<Pair<PointRequest, DBTeam>> pointsAwarded
 	@Accessors val PublishSubject<Pair<PointRequest, DBTeam>> pointsDenied
@@ -31,7 +34,8 @@ class Database implements Closeable {
 		session = cluster.connect("lsw2017")
 		 
 		val manager = new MappingManager(session)
-		mapper = manager.mapper(DBTeam)
+		mapperTeam = manager.mapper(DBTeam)
+		mapperQueue = manager.mapper(DBQueue)
 		
 		pointsAwarded = PublishSubject.create()
 		pointsDenied = PublishSubject.create()
@@ -39,8 +43,16 @@ class Database implements Closeable {
 		log.info("Database connection initialized")
 	}
 	
+	def getQueues() {
+		mapperQueue.map(session.execute("SELECT * FROM lsw2017.queue")).all()
+	}
+	
+	def getQueuesForTeam(DBTeam team) {
+		mapperQueue.map(session.execute('''SELECT * FROM lsw2017.queue WERE battleground in («Arrays.asList(if(team.battleground1) 0 else 1, if(team.battleground2) 0 else 2, if(team.battleground3) 0 else 3, if(team.battleground4) 0 else 4, if(team.battleground5) 0 else 5, if(team.battleground6) 0 else 6).filter[it != 0].map[it+""].reduce[a,b|a+","+b]»)''')).all()
+	}
+	
 	def awardPoints(PointRequest request) {
-		mapper.get(request.teamName) => [
+		mapperTeam.get(request.teamName) => [
 			if(request.currentTime-lastCheckedIn.time > Duration.ofMinutes(1).toMillis) {
 				it.points += request.points
 				it.lastCheckedIn = new Date(request.currentTime)
@@ -73,15 +85,15 @@ class Database implements Closeable {
 	}
 	
 	def getTeam(String teamName) {
-		return mapper.get(teamName)	
+		return mapperTeam.get(teamName)	
 	}
 	
 	def save(DBTeam team) {
-		mapper.save(team)
+		mapperTeam.save(team)
 	}
 	
 	def saveAsync(DBTeam team) {
-		mapper.saveAsync(team)
+		mapperTeam.saveAsync(team)
 	}
 	
 	override close() throws IOException {
