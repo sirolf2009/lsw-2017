@@ -12,15 +12,14 @@ import io.reactivex.subjects.PublishSubject;
 import java.io.Closeable;
 import java.io.IOException;
 import java.time.Duration;
-import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.xtend.lib.annotations.Accessors;
-import org.eclipse.xtend2.lib.StringConcatenation;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
-import org.eclipse.xtext.xbase.lib.Functions.Function2;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.ObjectExtensions;
 import org.eclipse.xtext.xbase.lib.Pair;
@@ -60,58 +59,67 @@ public class Database implements Closeable {
     return this.mapperQueue.map(this.session.execute("SELECT * FROM lsw2017.queue")).all();
   }
   
-  public List<DBQueue> getQueuesForTeam(final DBTeam team) {
-    StringConcatenation _builder = new StringConcatenation();
-    _builder.append("SELECT * FROM lsw2017.queue WERE battleground in (");
-    int _xifexpression = (int) 0;
-    if (team.battleground1) {
-      _xifexpression = 0;
-    } else {
-      _xifexpression = 1;
-    }
-    int _xifexpression_1 = (int) 0;
-    if (team.battleground2) {
-      _xifexpression_1 = 0;
-    } else {
-      _xifexpression_1 = 2;
-    }
-    int _xifexpression_2 = (int) 0;
-    if (team.battleground3) {
-      _xifexpression_2 = 0;
-    } else {
-      _xifexpression_2 = 3;
-    }
-    int _xifexpression_3 = (int) 0;
-    if (team.battleground4) {
-      _xifexpression_3 = 0;
-    } else {
-      _xifexpression_3 = 4;
-    }
-    int _xifexpression_4 = (int) 0;
-    if (team.battleground5) {
-      _xifexpression_4 = 0;
-    } else {
-      _xifexpression_4 = 5;
-    }
-    int _xifexpression_5 = (int) 0;
-    if (team.battleground6) {
-      _xifexpression_5 = 0;
-    } else {
-      _xifexpression_5 = 6;
-    }
-    final Function1<Integer, Boolean> _function = (Integer it) -> {
-      return Boolean.valueOf(((it).intValue() != 0));
+  public List<Integer> getIdleBattlegroundsForTeam(final DBTeam team) {
+    final List<Integer> battlegrounds = IterableExtensions.<Integer>toList(team.calculateUnplayedBattlegrounds());
+    final List<DBQueue> queues = this.getAllQueues();
+    final Function1<Integer, Boolean> _function = (Integer interestingBattleground) -> {
+      final Function1<DBQueue, Boolean> _function_1 = (DBQueue it) -> {
+        return Boolean.valueOf(Integer.valueOf(it.getBattleground()).equals(interestingBattleground));
+      };
+      int _size = IterableExtensions.size(IterableExtensions.<DBQueue>filter(queues, _function_1));
+      return Boolean.valueOf((_size == 0));
     };
-    final Function1<Integer, String> _function_1 = (Integer it) -> {
-      return (it + "");
+    return IterableExtensions.<Integer>toList(IterableExtensions.<Integer>filter(battlegrounds, _function));
+  }
+  
+  public List<DBQueue> getJoinableQueuesForTeam(final DBTeam team) {
+    final List<Integer> battlegrounds = IterableExtensions.<Integer>toList(team.calculateUnplayedBattlegrounds());
+    final Function1<DBQueue, Boolean> _function = (DBQueue it) -> {
+      String _second_battler = it.getSecond_battler();
+      return Boolean.valueOf((_second_battler == null));
     };
-    final Function2<String, String, String> _function_2 = (String a, String b) -> {
-      return ((a + ",") + b);
+    final List<DBQueue> queues = IterableExtensions.<DBQueue>toList(IterableExtensions.<DBQueue>filter(this.getAllQueues(), _function));
+    final Function1<DBQueue, Boolean> _function_1 = (DBQueue it) -> {
+      return Boolean.valueOf(battlegrounds.contains(Integer.valueOf(it.getBattleground())));
     };
-    String _reduce = IterableExtensions.<String>reduce(IterableExtensions.<Integer, String>map(IterableExtensions.<Integer>filter(Arrays.<Integer>asList(Integer.valueOf(_xifexpression), Integer.valueOf(_xifexpression_1), Integer.valueOf(_xifexpression_2), Integer.valueOf(_xifexpression_3), Integer.valueOf(_xifexpression_4), Integer.valueOf(_xifexpression_5)), _function), _function_1), _function_2);
-    _builder.append(_reduce);
-    _builder.append(")");
-    return this.mapperQueue.map(this.session.execute(_builder.toString())).all();
+    return IterableExtensions.<DBQueue>toList(IterableExtensions.<DBQueue>filter(queues, _function_1));
+  }
+  
+  public Integer getSmallestQueueForTeam(final DBTeam team) {
+    final List<Integer> battlegrounds = IterableExtensions.<Integer>toList(team.calculateUnplayedBattlegrounds());
+    final List<DBQueue> queues = this.getAllQueues();
+    final Function1<DBQueue, Boolean> _function = (DBQueue it) -> {
+      return Boolean.valueOf(battlegrounds.contains(Integer.valueOf(it.getBattleground())));
+    };
+    final Function1<DBQueue, Integer> _function_1 = (DBQueue it) -> {
+      return Integer.valueOf(it.getBattleground());
+    };
+    final Comparator<Map.Entry<Integer, List<DBQueue>>> _function_2 = (Map.Entry<Integer, List<DBQueue>> a, Map.Entry<Integer, List<DBQueue>> b) -> {
+      return Integer.valueOf(a.getValue().size()).compareTo(Integer.valueOf(b.getValue().size()));
+    };
+    return IterableExtensions.<Integer, DBQueue>groupBy(IterableExtensions.<DBQueue>filter(queues, _function), _function_1).entrySet().stream().sorted(_function_2).findFirst().get().getKey();
+  }
+  
+  public void addTeamToQueue(final DBQueue queue, final DBTeam team) {
+    queue.setSecond_battler(team.teamName);
+    Date _date = new Date();
+    queue.setSecond_joined(_date);
+  }
+  
+  public List<DBQueue> getAllQueues() {
+    return this.mapperQueue.map(this.session.execute("SELECT * FROM lsw2017.queue")).all();
+  }
+  
+  public void addTeamToBattleground(final int battleground, final DBTeam team) {
+    DBQueue _dBQueue = new DBQueue();
+    final Procedure1<DBQueue> _function = (DBQueue queue) -> {
+      queue.setBattleground(battleground);
+      queue.setFirst_battler(team.teamName);
+      Date _date = new Date();
+      queue.setFirst_joined(_date);
+    };
+    DBQueue _doubleArrow = ObjectExtensions.<DBQueue>operator_doubleArrow(_dBQueue, _function);
+    this.mapperQueue.save(_doubleArrow);
   }
   
   public DBTeam awardPoints(final PointRequest request) {

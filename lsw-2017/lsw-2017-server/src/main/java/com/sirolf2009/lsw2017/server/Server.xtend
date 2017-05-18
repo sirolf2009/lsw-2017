@@ -1,18 +1,18 @@
 package com.sirolf2009.lsw2017.server
 
+import com.sirolf2009.lsw2017.common.model.DBTeam
+import com.sirolf2009.lsw2017.common.model.NotifyBattleground
+import com.sirolf2009.lsw2017.common.model.NotifySuccesful
+import com.sirolf2009.lsw2017.common.model.NotifyWait
+import com.sirolf2009.lsw2017.common.model.PointRequest
 import com.sirolf2009.lsw2017.server.net.Connector
 import com.sirolf2009.lsw2017.server.net.Database
 import io.reactivex.schedulers.Schedulers
 import java.io.Closeable
 import java.io.IOException
+import java.util.HashMap
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
-import java.util.HashMap
-import com.sirolf2009.lsw2017.common.model.NotifySuccesful
-import com.sirolf2009.lsw2017.common.model.NotifyWait
-import com.sirolf2009.lsw2017.common.model.NotifyBattleground
-import com.sirolf2009.lsw2017.common.model.PointRequest
-import com.sirolf2009.lsw2017.common.model.DBTeam
 
 //Battleground to be played = the battleground that you have not gone to, and has the smallest queue
 //You will not join a battleground that you have previously played
@@ -52,7 +52,8 @@ class Server implements Closeable {
 		database.pointsAwarded.subscribeOn(Schedulers.io).subscribe [
 			log.info("Awarded " + value.teamName + " " + key.points + " points from "+key.hostName)
 			connector.send(acceptedQueues.get(key.hostName), new NotifySuccesful(key.teamName, key.points))
-			if(value.timesCheckedIn % 6 == 0) {
+//			if(value.timesCheckedIn % 6 == 0) {
+			if(value.timesCheckedIn % 1 == 0) {
 				log.info(value.teamName + " is now allowed to go to the battleground")
 				connector.send(battlegroundQueues.get(key.hostName), new NotifyBattleground(value.teamName))
 			}
@@ -64,7 +65,24 @@ class Server implements Closeable {
 	}
 	
 	def moveTeamToBattleground(Pair<PointRequest, DBTeam> team) {
-		
+		val idle = database.getIdleBattlegroundsForTeam(team.value)
+		if(idle.size > 0) {
+			val battleground = idle.get(0)
+			database.addTeamToBattleground(battleground, team.value)
+			return battleground
+		} else {
+			val queues = database.getJoinableQueuesForTeam(team.value)
+			val joinable = queues.groupBy[battleground].entrySet.stream.sorted[a,b| a.value.size.compareTo(b.value.size)].findFirst
+			if(joinable.isPresent) {
+				val battleground = joinable.get.value.get(0)
+				database.addTeamToQueue(battleground, team.value)
+				return battleground
+			} else {
+				val battleground = database.getSmallestQueueForTeam(team.value)
+				database.addTeamToBattleground(battleground, team.value)
+				return battleground
+			}
+		}
 	}
 
 	override close() throws IOException {

@@ -6,7 +6,7 @@ import org.eclipse.xtend.lib.annotations.Accessors
 import org.eclipse.xtend.lib.annotations.EqualsHashCode
 import org.eclipse.xtend.lib.annotations.ToString
 
-@Accessors @ToString @EqualsHashCode @Table(keyspace="lsw2017", name="teams") class DBQueue {
+@Accessors @ToString @EqualsHashCode @Table(keyspace="lsw2017", name="queue") class DBQueue {
 	
 	private var int battleground
 	private var String first_battler

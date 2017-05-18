@@ -15,7 +15,6 @@ import java.util.Date
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import org.eclipse.xtend.lib.annotations.Accessors
-import java.util.Arrays
 
 class Database implements Closeable {
 
@@ -47,8 +46,39 @@ class Database implements Closeable {
 		mapperQueue.map(session.execute("SELECT * FROM lsw2017.queue")).all()
 	}
 	
-	def getQueuesForTeam(DBTeam team) {
-		mapperQueue.map(session.execute('''SELECT * FROM lsw2017.queue WERE battleground in («Arrays.asList(if(team.battleground1) 0 else 1, if(team.battleground2) 0 else 2, if(team.battleground3) 0 else 3, if(team.battleground4) 0 else 4, if(team.battleground5) 0 else 5, if(team.battleground6) 0 else 6).filter[it != 0].map[it+""].reduce[a,b|a+","+b]»)''')).all()
+	def getIdleBattlegroundsForTeam(DBTeam team) {
+		val battlegrounds = team.calculateUnplayedBattlegrounds.toList()
+		val queues = allQueues
+		return battlegrounds.filter[interestingBattleground| queues.filter[it.battleground.equals(interestingBattleground)].size == 0].toList
+	}
+	
+	def getJoinableQueuesForTeam(DBTeam team) {
+		val battlegrounds = team.calculateUnplayedBattlegrounds.toList()
+		val queues = allQueues.filter[second_battler === null].toList
+		return queues.filter[battlegrounds.contains(battleground)].toList()
+	}
+	
+	def getSmallestQueueForTeam(DBTeam team) {
+		val battlegrounds = team.calculateUnplayedBattlegrounds.toList()
+		val queues = allQueues
+		return queues.filter[battlegrounds.contains(battleground)].groupBy[battleground].entrySet.stream.sorted[a,b| a.value.size.compareTo(b.value.size)].findFirst.get().key
+	}
+	
+	def addTeamToQueue(DBQueue queue, DBTeam team) {
+		queue.second_battler = team.teamName
+		queue.second_joined = new Date()
+	}
+	
+	def getAllQueues() {
+		mapperQueue.map(session.execute("SELECT * FROM lsw2017.queue")).all
+	}
+	
+	def addTeamToBattleground(int battleground, DBTeam team) {
+		mapperQueue.save(new DBQueue() => [queue|
+			queue.battleground = battleground
+			queue.first_battler = team.teamName
+			queue.first_joined = new Date()
+		])
 	}
 	
 	def awardPoints(PointRequest request) {

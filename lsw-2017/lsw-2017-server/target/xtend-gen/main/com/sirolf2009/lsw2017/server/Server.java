@@ -1,5 +1,6 @@
 package com.sirolf2009.lsw2017.server;
 
+import com.sirolf2009.lsw2017.common.model.DBQueue;
 import com.sirolf2009.lsw2017.common.model.DBTeam;
 import com.sirolf2009.lsw2017.common.model.Handshake;
 import com.sirolf2009.lsw2017.common.model.NotifyBattleground;
@@ -12,10 +13,16 @@ import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.xtext.xbase.lib.Exceptions;
+import org.eclipse.xtext.xbase.lib.Functions.Function1;
+import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.Pair;
 
 @SuppressWarnings("all")
@@ -87,7 +94,7 @@ public class Server implements Closeable {
       int _points_1 = it.getKey().getPoints();
       NotifySuccesful _notifySuccesful = new NotifySuccesful(_teamName, _points_1);
       this.connector.send(_get, _notifySuccesful);
-      if (((it.getValue().timesCheckedIn % 6) == 0)) {
+      if (((it.getValue().timesCheckedIn % 1) == 0)) {
         Server.log.info((it.getValue().teamName + " is now allowed to go to the battleground"));
         String _get_1 = this.battlegroundQueues.get(it.getKey().getHostName());
         NotifyBattleground _notifyBattleground = new NotifyBattleground(it.getValue().teamName);
@@ -111,7 +118,33 @@ public class Server implements Closeable {
   }
   
   public Object moveTeamToBattleground(final Pair<PointRequest, DBTeam> team) {
-    return null;
+    final List<Integer> idle = this.database.getIdleBattlegroundsForTeam(team.getValue());
+    int _size = idle.size();
+    boolean _greaterThan = (_size > 0);
+    if (_greaterThan) {
+      final Integer battleground = idle.get(0);
+      this.database.addTeamToBattleground((battleground).intValue(), team.getValue());
+      return battleground;
+    } else {
+      final List<DBQueue> queues = this.database.getJoinableQueuesForTeam(team.getValue());
+      final Function1<DBQueue, Integer> _function = (DBQueue it) -> {
+        return Integer.valueOf(it.getBattleground());
+      };
+      final Comparator<Map.Entry<Integer, List<DBQueue>>> _function_1 = (Map.Entry<Integer, List<DBQueue>> a, Map.Entry<Integer, List<DBQueue>> b) -> {
+        return Integer.valueOf(a.getValue().size()).compareTo(Integer.valueOf(b.getValue().size()));
+      };
+      final Optional<Map.Entry<Integer, List<DBQueue>>> joinable = IterableExtensions.<Integer, DBQueue>groupBy(queues, _function).entrySet().stream().sorted(_function_1).findFirst();
+      boolean _isPresent = joinable.isPresent();
+      if (_isPresent) {
+        final DBQueue battleground_1 = joinable.get().getValue().get(0);
+        this.database.addTeamToQueue(battleground_1, team.getValue());
+        return battleground_1;
+      } else {
+        final Integer battleground_2 = this.database.getSmallestQueueForTeam(team.getValue());
+        this.database.addTeamToBattleground((battleground_2).intValue(), team.getValue());
+        return battleground_2;
+      }
+    }
   }
   
   @Override
