@@ -69,7 +69,7 @@ public class Client extends Application {
         try {
           String _hostname = Hostname.getHostname();
           String _text = team.getText();
-          int _parseInt = Integer.parseInt(points.getText());
+          int _parseInt = Integer.parseInt(points.getText().replace("-vindikleuks", ""));
           long _currentTimeMillis = System.currentTimeMillis();
           PointRequest _pointRequest = new PointRequest(_hostname, _text, _parseInt, _currentTimeMillis);
           connector.requestPoints(_pointRequest);

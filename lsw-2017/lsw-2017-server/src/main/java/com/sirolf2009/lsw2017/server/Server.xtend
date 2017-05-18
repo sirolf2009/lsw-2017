@@ -51,11 +51,12 @@ class Server implements Closeable {
 		]
 		database.pointsAwarded.subscribeOn(Schedulers.io).subscribe [
 			log.info("Awarded " + value.teamName + " " + key.points + " points from "+key.hostName)
-			connector.send(acceptedQueues.get(key.hostName), new NotifySuccesful(key.teamName, key.points))
 //			if(value.timesCheckedIn % 6 == 0) {
-			if(value.timesCheckedIn % 1 == 0) {
+			if(value.timesCheckedIn % 2 == 0) {
 				log.info(value.teamName + " is now allowed to go to the battleground")
-				connector.send(battlegroundQueues.get(key.hostName), new NotifyBattleground(value.teamName))
+				connector.send(battlegroundQueues.get(key.hostName), new NotifyBattleground(value.teamName, moveTeamToBattleground(it)))
+			} else {
+				connector.send(acceptedQueues.get(key.hostName), new NotifySuccesful(key.teamName, key.points))
 			}
 		]
 		database.pointsDenied.subscribeOn(Schedulers.io).subscribe [
@@ -64,19 +65,25 @@ class Server implements Closeable {
 		]
 	}
 	
-	def moveTeamToBattleground(Pair<PointRequest, DBTeam> team) {
+	def int moveTeamToBattleground(Pair<PointRequest, DBTeam> team) {
+		val queues = database.getJoinableQueuesForTeam(team.value)
+		val joinableEmpty = queues.groupBy[battleground].entrySet.stream.filter[value.size == 1].findFirst
+		if(joinableEmpty.present) {
+			val battleground = joinableEmpty.get().value.get(0)
+			database.addTeamToQueue(battleground, team.value)
+			return battleground.battleground
+		}
 		val idle = database.getIdleBattlegroundsForTeam(team.value)
 		if(idle.size > 0) {
 			val battleground = idle.get(0)
 			database.addTeamToBattleground(battleground, team.value)
 			return battleground
 		} else {
-			val queues = database.getJoinableQueuesForTeam(team.value)
 			val joinable = queues.groupBy[battleground].entrySet.stream.sorted[a,b| a.value.size.compareTo(b.value.size)].findFirst
 			if(joinable.isPresent) {
 				val battleground = joinable.get.value.get(0)
 				database.addTeamToQueue(battleground, team.value)
-				return battleground
+				return battleground.battleground
 			} else {
 				val battleground = database.getSmallestQueueForTeam(team.value)
 				database.addTeamToBattleground(battleground, team.value)

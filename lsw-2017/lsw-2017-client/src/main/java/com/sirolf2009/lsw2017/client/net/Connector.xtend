@@ -82,7 +82,7 @@ class Connector implements Closeable {
 				Platform.runLater [
 					val notification = new TrayNotification()
 					notification.title = "Battleground"
-					notification.message = '''«notify.teamName» must now go to the battleground'''
+					notification.message = '''«notify.teamName» must now go to the battleground «notify.battleground»'''
 					notification.notification = Notifications.INFORMATION
 					notification.showAndDismiss(Duration.seconds(1))
 				]

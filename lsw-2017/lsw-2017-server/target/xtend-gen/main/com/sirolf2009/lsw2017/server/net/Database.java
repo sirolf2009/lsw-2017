@@ -55,10 +55,6 @@ public class Database implements Closeable {
     Database.log.info("Database connection initialized");
   }
   
-  public List<DBQueue> getQueues() {
-    return this.mapperQueue.map(this.session.execute("SELECT * FROM lsw2017.queue")).all();
-  }
-  
   public List<Integer> getIdleBattlegroundsForTeam(final DBTeam team) {
     final List<Integer> battlegrounds = IterableExtensions.<Integer>toList(team.calculateUnplayedBattlegrounds());
     final List<DBQueue> queues = this.getAllQueues();
@@ -104,6 +100,7 @@ public class Database implements Closeable {
     queue.setSecond_battler(team.teamName);
     Date _date = new Date();
     queue.setSecond_joined(_date);
+    this.mapperQueue.save(queue);
   }
   
   public List<DBQueue> getAllQueues() {

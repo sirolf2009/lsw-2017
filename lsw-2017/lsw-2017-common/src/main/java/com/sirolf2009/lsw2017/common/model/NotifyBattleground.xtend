@@ -4,12 +4,14 @@ import org.eclipse.xtend.lib.annotations.Accessors
 
 @Accessors class NotifyBattleground {
 	
-	var  String teamName
+	var String teamName
+	var int battleground
 	
 	new() {}
 	
-	new(String teamName) {
+	new(String teamName, int battleground) {
 		this.teamName = teamName
+		this.battleground = battleground
 	}
 	
 }

@@ -42,10 +42,6 @@ class Database implements Closeable {
 		log.info("Database connection initialized")
 	}
 	
-	def getQueues() {
-		mapperQueue.map(session.execute("SELECT * FROM lsw2017.queue")).all()
-	}
-	
 	def getIdleBattlegroundsForTeam(DBTeam team) {
 		val battlegrounds = team.calculateUnplayedBattlegrounds.toList()
 		val queues = allQueues
@@ -67,6 +63,7 @@ class Database implements Closeable {
 	def addTeamToQueue(DBQueue queue, DBTeam team) {
 		queue.second_battler = team.teamName
 		queue.second_joined = new Date()
+		mapperQueue.save(queue)
 	}
 	
 	def getAllQueues() {

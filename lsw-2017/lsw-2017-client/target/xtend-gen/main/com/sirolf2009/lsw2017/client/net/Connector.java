@@ -113,7 +113,9 @@ public class Connector implements Closeable {
             StringConcatenation _builder = new StringConcatenation();
             String _teamName = notify.getTeamName();
             _builder.append(_teamName);
-            _builder.append(" must now go to the battleground");
+            _builder.append(" must now go to the battleground ");
+            int _battleground = notify.getBattleground();
+            _builder.append(_battleground);
             notification.setMessage(_builder.toString());
             notification.setNotification(Notifications.INFORMATION);
             notification.showAndDismiss(Duration.seconds(1));

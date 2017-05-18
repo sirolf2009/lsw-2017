@@ -48,7 +48,7 @@ import com.kstruct.gethostname4j.Hostname
 
 			val sendPointsToServer = [
 				try {
-					connector.requestPoints(new PointRequest(Hostname.hostname, team.text, Integer.parseInt(points.text), System.currentTimeMillis))
+					connector.requestPoints(new PointRequest(Hostname.hostname, team.text, Integer.parseInt(points.text.replace("-vindikleuks", "")), System.currentTimeMillis))
 					team.clear()
 					points.clear()
 					team.requestFocus()
