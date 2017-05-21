@@ -14,10 +14,16 @@ import java.util.HashMap
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 
-//Battleground to be played = the battleground that you have not gone to, and has the smallest queue
-//You will not join a battleground that you have previously played
+//SSH Server IP = 217.63.34.101:54132 of 54123
+//5672 <- port rabbitmq
+//Welkom6211
+//vhost /floris
+//rabbit 15672
+
+//DONE Battleground to be played = the battleground that you have not gone to, and has the smallest queue
+//DONE You will not join a battleground that you have previously played
 //Overview of battlegrounds and who's playing/queueing
-//Generate unique barcodes
+//DONE Generate unique barcodes
 
 //Leaderboard shows how long the game will still last for
 //last 10 mins; the points will dissappear and the timer will go fullscreen
@@ -46,17 +52,20 @@ class Server implements Closeable {
 				log.info("Creating new team")
 				database.createNewTeam(teamName)
 			}
-			log.debug("Awarding " + teamName + " " + points + " points")
-			database.awardPoints(it)
+			if(points.endsWith("-vindikleuks")) {
+				log.debug("Awarding " + teamName + " " + points + " points")
+				database.awardPoints(it)	
+			} else if(points.contains("-vindikleuks-verliezer-slachtveld-")) {
+			}
 		]
 		database.pointsAwarded.subscribeOn(Schedulers.io).subscribe [
 			log.info("Awarded " + value.teamName + " " + key.points + " points from "+key.hostName)
-//			if(value.timesCheckedIn % 6 == 0) {
-			if(value.timesCheckedIn % 2 == 0) {
+			if(value.timesCheckedIn % 6 == 0) {
+//			if(value.timesCheckedIn % 2 == 0) {
 				log.info(value.teamName + " is now allowed to go to the battleground")
 				connector.send(battlegroundQueues.get(key.hostName), new NotifyBattleground(value.teamName, moveTeamToBattleground(it)))
 			} else {
-				connector.send(acceptedQueues.get(key.hostName), new NotifySuccesful(key.teamName, key.points))
+//				connector.send(acceptedQueues.get(key.hostName), new NotifySuccesful(key.teamName, key.points))
 			}
 		]
 		database.pointsDenied.subscribeOn(Schedulers.io).subscribe [

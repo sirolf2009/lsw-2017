@@ -11,7 +11,6 @@ import com.sirolf2009.lsw2017.common.model.PointRequest;
 import io.reactivex.subjects.PublishSubject;
 import java.io.Closeable;
 import java.io.IOException;
-import java.time.Duration;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
@@ -45,7 +44,7 @@ public class Database implements Closeable {
   private final PublishSubject<Pair<PointRequest, DBTeam>> pointsDenied;
   
   public Database() {
-    this.cluster = Cluster.builder().addContactPoints("localhost").withPort(32769).build();
+    this.cluster = Cluster.builder().addContactPoints("localhost").withPort(32779).build();
     this.session = this.cluster.connect("lsw2017");
     final MappingManager manager = new MappingManager(this.session);
     this.mapperTeam = manager.<DBTeam>mapper(DBTeam.class);
@@ -120,30 +119,8 @@ public class Database implements Closeable {
   }
   
   public DBTeam awardPoints(final PointRequest request) {
-    DBTeam _get = this.mapperTeam.get(request.getTeamName());
-    final Procedure1<DBTeam> _function = (DBTeam it) -> {
-      long _currentTime = request.getCurrentTime();
-      long _time = it.lastCheckedIn.getTime();
-      long _minus = (_currentTime - _time);
-      long _millis = Duration.ofMinutes(1).toMillis();
-      boolean _greaterThan = (_minus > _millis);
-      if (_greaterThan) {
-        int _points = it.points;
-        int _points_1 = request.getPoints();
-        it.points = (_points + _points_1);
-        long _currentTime_1 = request.getCurrentTime();
-        Date _date = new Date(_currentTime_1);
-        it.lastCheckedIn = _date;
-        it.timesCheckedIn++;
-        this.save(it);
-        Pair<PointRequest, DBTeam> _mappedTo = Pair.<PointRequest, DBTeam>of(request, it);
-        this.pointsAwarded.onNext(_mappedTo);
-      } else {
-        Pair<PointRequest, DBTeam> _mappedTo_1 = Pair.<PointRequest, DBTeam>of(request, it);
-        this.pointsDenied.onNext(_mappedTo_1);
-      }
-    };
-    return ObjectExtensions.<DBTeam>operator_doubleArrow(_get, _function);
+    throw new Error("Unresolved compilation problems:"
+      + "\nType mismatch: cannot convert from String to int");
   }
   
   public int getPoints(final String teamName) {

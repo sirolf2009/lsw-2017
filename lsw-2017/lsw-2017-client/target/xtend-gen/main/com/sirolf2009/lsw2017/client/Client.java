@@ -16,6 +16,7 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.input.KeyCode;
@@ -42,7 +43,7 @@ public class Client extends Application {
   public void start(final Stage stage) throws Exception {
     stage.setTitle("LSW 2017");
     Application.setUserAgentStylesheet(Application.STYLESHEET_CASPIAN);
-    final Connector connector = new Connector();
+    final Connector connector = new Connector(stage);
     StackPane _stackPane = new StackPane();
     final Procedure1<StackPane> _function = (StackPane it) -> {
       ObservableList<String> _stylesheets = it.getStylesheets();
@@ -50,7 +51,15 @@ public class Client extends Application {
       ObservableList<Node> _children = it.getChildren();
       StackPane _stackPane_1 = new StackPane();
       final Procedure1<StackPane> _function_1 = (StackPane it_1) -> {
-        it_1.setAlignment(Pos.TOP_RIGHT);
+        it_1.setAlignment(Pos.TOP_CENTER);
+        ObservableList<Node> _children_1 = it_1.getChildren();
+        Label _label = new Label("SuperShurkenBoek");
+        final Procedure1<Label> _function_2 = (Label it_2) -> {
+          ObservableList<String> _styleClass = it_2.getStyleClass();
+          _styleClass.add("title");
+        };
+        Label _doubleArrow = ObjectExtensions.<Label>operator_doubleArrow(_label, _function_2);
+        _children_1.add(_doubleArrow);
       };
       StackPane _doubleArrow = ObjectExtensions.<StackPane>operator_doubleArrow(_stackPane_1, _function_1);
       _children.add(_doubleArrow);
@@ -69,9 +78,9 @@ public class Client extends Application {
         try {
           String _hostname = Hostname.getHostname();
           String _text = team.getText();
-          int _parseInt = Integer.parseInt(points.getText().replace("-vindikleuks", ""));
+          String _text_1 = points.getText();
           long _currentTimeMillis = System.currentTimeMillis();
-          PointRequest _pointRequest = new PointRequest(_hostname, _text, _parseInt, _currentTimeMillis);
+          PointRequest _pointRequest = new PointRequest(_hostname, _text, _text_1, _currentTimeMillis);
           connector.requestPoints(_pointRequest);
           team.clear();
           points.clear();

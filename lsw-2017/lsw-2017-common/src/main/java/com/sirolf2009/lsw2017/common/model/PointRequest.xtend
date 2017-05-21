@@ -8,12 +8,12 @@ import org.eclipse.xtend.lib.annotations.EqualsHashCode
 	
 	String hostName
 	String teamName
-	int points
+	String points
 	long currentTime
 	
 	new() {}
 	
-	new(String hostName, String teamName, int points, long currentTime) {
+	new(String hostName, String teamName, String points, long currentTime) {
 		this.hostName = hostName
 		this.teamName = teamName
 		this.points = points

@@ -4,7 +4,6 @@ import com.sirolf2009.lsw2017.common.model.DBQueue;
 import com.sirolf2009.lsw2017.common.model.DBTeam;
 import com.sirolf2009.lsw2017.common.model.Handshake;
 import com.sirolf2009.lsw2017.common.model.NotifyBattleground;
-import com.sirolf2009.lsw2017.common.model.NotifySuccesful;
 import com.sirolf2009.lsw2017.common.model.NotifyWait;
 import com.sirolf2009.lsw2017.common.model.PointRequest;
 import com.sirolf2009.lsw2017.server.net.Connector;
@@ -73,41 +72,43 @@ public class Server implements Closeable {
         Server.log.info("Creating new team");
         this.database.createNewTeam(it.getTeamName());
       }
-      String _teamName = it.getTeamName();
-      String _plus = ("Awarding " + _teamName);
-      String _plus_1 = (_plus + " ");
-      int _points = it.getPoints();
-      String _plus_2 = (_plus_1 + Integer.valueOf(_points));
-      String _plus_3 = (_plus_2 + " points");
-      Server.log.debug(_plus_3);
-      this.database.awardPoints(it);
+      boolean _endsWith = it.getPoints().endsWith("-vindikleuks");
+      if (_endsWith) {
+        String _teamName = it.getTeamName();
+        String _plus = ("Awarding " + _teamName);
+        String _plus_1 = (_plus + " ");
+        String _points = it.getPoints();
+        String _plus_2 = (_plus_1 + _points);
+        String _plus_3 = (_plus_2 + " points");
+        Server.log.debug(_plus_3);
+        this.database.awardPoints(it);
+      } else {
+        boolean _contains = it.getPoints().contains("-vindikleuks-verliezer-slachtveld-");
+        if (_contains) {
+        }
+      }
     };
     this.connector.getPointRequest().subscribeOn(Schedulers.computation()).subscribe(_function_5);
     final Consumer<Pair<PointRequest, DBTeam>> _function_6 = (Pair<PointRequest, DBTeam> it) -> {
-      int _points = it.getKey().getPoints();
-      String _plus = ((("Awarded " + it.getValue().teamName) + " ") + Integer.valueOf(_points));
+      String _points = it.getKey().getPoints();
+      String _plus = ((("Awarded " + it.getValue().teamName) + " ") + _points);
       String _plus_1 = (_plus + " points from ");
       String _hostName = it.getKey().getHostName();
       String _plus_2 = (_plus_1 + _hostName);
       Server.log.info(_plus_2);
-      if (((it.getValue().timesCheckedIn % 2) == 0)) {
+      if (((it.getValue().timesCheckedIn % 6) == 0)) {
         Server.log.info((it.getValue().teamName + " is now allowed to go to the battleground"));
         String _get = this.battlegroundQueues.get(it.getKey().getHostName());
         int _moveTeamToBattleground = this.moveTeamToBattleground(it);
         NotifyBattleground _notifyBattleground = new NotifyBattleground(it.getValue().teamName, _moveTeamToBattleground);
         this.connector.send(_get, _notifyBattleground);
       } else {
-        String _get_1 = this.acceptedQueues.get(it.getKey().getHostName());
-        String _teamName = it.getKey().getTeamName();
-        int _points_1 = it.getKey().getPoints();
-        NotifySuccesful _notifySuccesful = new NotifySuccesful(_teamName, _points_1);
-        this.connector.send(_get_1, _notifySuccesful);
       }
     };
     this.database.getPointsAwarded().subscribeOn(Schedulers.io()).subscribe(_function_6);
     final Consumer<Pair<PointRequest, DBTeam>> _function_7 = (Pair<PointRequest, DBTeam> it) -> {
-      int _points = it.getKey().getPoints();
-      String _plus = ((("Denied " + it.getValue().teamName) + " ") + Integer.valueOf(_points));
+      String _points = it.getKey().getPoints();
+      String _plus = ((("Denied " + it.getValue().teamName) + " ") + _points);
       String _plus_1 = (_plus + " points from ");
       String _hostName = it.getKey().getHostName();
       String _plus_2 = (_plus_1 + _hostName);

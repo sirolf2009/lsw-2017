@@ -21,6 +21,7 @@ import javafx.util.Duration
 import org.apache.logging.log4j.LogManager
 import xtendfx.FXApp
 import com.kstruct.gethostname4j.Hostname
+import javafx.scene.control.Label
 
 @FXApp class Client {
 
@@ -30,12 +31,15 @@ import com.kstruct.gethostname4j.Hostname
 		stage.title = "LSW 2017"
 		userAgentStylesheet = STYLESHEET_CASPIAN
 
-		val connector = new Connector()
+		val connector = new Connector(stage)
 
 		stage.scene = new Scene(new StackPane => [
 			stylesheets += "client.css"
 			children += new StackPane => [
-				alignment = Pos.TOP_RIGHT
+				alignment = Pos.TOP_CENTER
+				children += new Label("SuperShurkenBoek") => [
+					styleClass += "title"
+				]
 			]
 
 			val team = new TextField() => [
@@ -48,7 +52,7 @@ import com.kstruct.gethostname4j.Hostname
 
 			val sendPointsToServer = [
 				try {
-					connector.requestPoints(new PointRequest(Hostname.hostname, team.text, Integer.parseInt(points.text.replace("-vindikleuks", "")), System.currentTimeMillis))
+					connector.requestPoints(new PointRequest(Hostname.hostname, team.text, points.text, System.currentTimeMillis))
 					team.clear()
 					points.clear()
 					team.requestFocus()

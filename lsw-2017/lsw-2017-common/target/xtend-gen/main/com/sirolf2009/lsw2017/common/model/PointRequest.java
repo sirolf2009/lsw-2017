@@ -15,14 +15,14 @@ public class PointRequest {
   
   private String teamName;
   
-  private int points;
+  private String points;
   
   private long currentTime;
   
   public PointRequest() {
   }
   
-  public PointRequest(final String hostName, final String teamName, final int points, final long currentTime) {
+  public PointRequest(final String hostName, final String teamName, final String points, final long currentTime) {
     this.hostName = hostName;
     this.teamName = teamName;
     this.points = points;
@@ -48,11 +48,11 @@ public class PointRequest {
   }
   
   @Pure
-  public int getPoints() {
+  public String getPoints() {
     return this.points;
   }
   
-  public void setPoints(final int points) {
+  public void setPoints(final String points) {
     this.points = points;
   }
   
@@ -96,7 +96,10 @@ public class PointRequest {
         return false;
     } else if (!this.teamName.equals(other.teamName))
       return false;
-    if (other.points != this.points)
+    if (this.points == null) {
+      if (other.points != null)
+        return false;
+    } else if (!this.points.equals(other.points))
       return false;
     if (other.currentTime != this.currentTime)
       return false;
@@ -110,7 +113,7 @@ public class PointRequest {
     int result = 1;
     result = prime * result + ((this.hostName== null) ? 0 : this.hostName.hashCode());
     result = prime * result + ((this.teamName== null) ? 0 : this.teamName.hashCode());
-    result = prime * result + this.points;
+    result = prime * result + ((this.points== null) ? 0 : this.points.hashCode());
     result = prime * result + (int) (this.currentTime ^ (this.currentTime >>> 32));
     return result;
   }

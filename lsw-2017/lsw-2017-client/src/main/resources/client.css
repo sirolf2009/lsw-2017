@@ -7,3 +7,11 @@
 .fullscreen-button:selected {
 	-fx-graphic: url("exit_full_screen.png");
 }
+
+.title {
+	-fx-text-fill: white;
+	-fx-background-color: blue;
+	-fx-padding: 8px ;
+	-fx-fit-to-width: true;
+	-fx-font-size: 80;
+}

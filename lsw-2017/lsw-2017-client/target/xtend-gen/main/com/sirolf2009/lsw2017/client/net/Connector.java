@@ -1,7 +1,5 @@
 package com.sirolf2009.lsw2017.client.net;
 
-import com.github.plushaze.traynotification.notification.Notifications;
-import com.github.plushaze.traynotification.notification.TrayNotification;
 import com.google.gson.Gson;
 import com.kstruct.gethostname4j.Hostname;
 import com.rabbitmq.client.AMQP;
@@ -18,17 +16,36 @@ import com.sirolf2009.lsw2017.common.model.NotifyWait;
 import com.sirolf2009.lsw2017.common.model.PointRequest;
 import java.io.Closeable;
 import java.io.IOException;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
+import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
+import javafx.geometry.Pos;
+import javafx.scene.Node;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
+import javafx.scene.text.Text;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import javafx.util.Duration;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.xtend2.lib.StringConcatenation;
 import org.eclipse.xtext.xbase.lib.Exceptions;
-import org.eclipse.xtext.xbase.lib.InputOutput;
+import org.eclipse.xtext.xbase.lib.ObjectExtensions;
+import org.eclipse.xtext.xbase.lib.Pair;
+import org.eclipse.xtext.xbase.lib.Procedures.Procedure1;
 
 @SuppressWarnings("all")
 public class Connector implements Closeable {
   private final static Logger log = LogManager.getLogger();
+  
+  private final Stage stage;
   
   private final Connection connection;
   
@@ -40,8 +57,9 @@ public class Connector implements Closeable {
   
   private final String battlegroundQueue;
   
-  public Connector() {
+  public Connector(final Stage stage) {
     try {
+      this.stage = stage;
       final ConnectionFactory factory = new ConnectionFactory();
       factory.setHost("localhost");
       factory.setPort(5672);
@@ -57,48 +75,30 @@ public class Connector implements Closeable {
       this.channel.basicConsume(this.acceptedQueue, true, new DefaultConsumer(this.channel) {
         @Override
         public void handleDelivery(final String consumerTag, final Envelope envelope, final AMQP.BasicProperties properties, final byte[] body) throws IOException {
-          String _string = new String(body);
-          InputOutput.<String>println(_string);
           Gson _gson = new Gson();
-          String _string_1 = new String(body);
-          final NotifySuccesful notify = _gson.<NotifySuccesful>fromJson(_string_1, NotifySuccesful.class);
-          final Runnable _function = () -> {
-            final TrayNotification notification = new TrayNotification();
-            notification.setTitle("Succes");
-            StringConcatenation _builder = new StringConcatenation();
-            String _teamName = notify.getTeamName();
-            _builder.append(_teamName);
-            _builder.append(" has received ");
-            int _points = notify.getPoints();
-            _builder.append(_points);
-            _builder.append(" points");
-            notification.setMessage(_builder.toString());
-            notification.setNotification(Notifications.SUCCESS);
-            notification.showAndDismiss(Duration.seconds(1));
-          };
-          Platform.runLater(_function);
+          String _string = new String(body);
+          final NotifySuccesful notify = _gson.<NotifySuccesful>fromJson(_string, NotifySuccesful.class);
+          StringConcatenation _builder = new StringConcatenation();
+          String _teamName = notify.getTeamName();
+          _builder.append(_teamName);
+          _builder.append(" has received ");
+          int _points = notify.getPoints();
+          _builder.append(_points);
+          _builder.append(" points");
+          Connector.this.dialogTimer(_builder.toString(), Duration.seconds(2));
         }
       });
       this.channel.basicConsume(this.deniedQueue, true, new DefaultConsumer(this.channel) {
         @Override
         public void handleDelivery(final String consumerTag, final Envelope envelope, final AMQP.BasicProperties properties, final byte[] body) throws IOException {
-          String _string = new String(body);
-          InputOutput.<String>println(_string);
           Gson _gson = new Gson();
-          String _string_1 = new String(body);
-          final NotifyWait notify = _gson.<NotifyWait>fromJson(_string_1, NotifyWait.class);
-          final Runnable _function = () -> {
-            final TrayNotification notification = new TrayNotification();
-            notification.setTitle("Error");
-            StringConcatenation _builder = new StringConcatenation();
-            String _teamName = notify.getTeamName();
-            _builder.append(_teamName);
-            _builder.append(" must wait a little while longer");
-            notification.setMessage(_builder.toString());
-            notification.setNotification(Notifications.ERROR);
-            notification.showAndDismiss(Duration.seconds(1));
-          };
-          Platform.runLater(_function);
+          String _string = new String(body);
+          final NotifyWait notify = _gson.<NotifyWait>fromJson(_string, NotifyWait.class);
+          StringConcatenation _builder = new StringConcatenation();
+          String _teamName = notify.getTeamName();
+          _builder.append(_teamName);
+          _builder.append(" must wait a little while longer");
+          Connector.this.dialogButton(_builder.toString());
         }
       });
       this.channel.basicConsume(this.battlegroundQueue, true, new DefaultConsumer(this.channel) {
@@ -107,25 +107,79 @@ public class Connector implements Closeable {
           Gson _gson = new Gson();
           String _string = new String(body);
           final NotifyBattleground notify = _gson.<NotifyBattleground>fromJson(_string, NotifyBattleground.class);
-          final Runnable _function = () -> {
-            final TrayNotification notification = new TrayNotification();
-            notification.setTitle("Battleground");
-            StringConcatenation _builder = new StringConcatenation();
-            String _teamName = notify.getTeamName();
-            _builder.append(_teamName);
-            _builder.append(" must now go to the battleground ");
-            int _battleground = notify.getBattleground();
-            _builder.append(_battleground);
-            notification.setMessage(_builder.toString());
-            notification.setNotification(Notifications.INFORMATION);
-            notification.showAndDismiss(Duration.seconds(1));
-          };
-          Platform.runLater(_function);
+          StringConcatenation _builder = new StringConcatenation();
+          String _teamName = notify.getTeamName();
+          _builder.append(_teamName);
+          _builder.append(" must now go to the battleground ");
+          int _battleground = notify.getBattleground();
+          _builder.append(_battleground);
+          Connector.this.dialogButton(_builder.toString());
         }
       });
     } catch (Throwable _e) {
       throw Exceptions.sneakyThrow(_e);
     }
+  }
+  
+  public void dialogTimer(final String text, final Duration duration) {
+    final Procedure1<Pair<VBox, Stage>> _function = (Pair<VBox, Stage> it) -> {
+      final Stage stage = it.getValue();
+      final EventHandler<ActionEvent> _function_1 = (ActionEvent it_1) -> {
+        stage.hide();
+      };
+      KeyFrame _keyFrame = new KeyFrame(duration, _function_1);
+      final Timeline timeline = new Timeline(_keyFrame);
+      timeline.play();
+    };
+    this.dialog(text, _function);
+  }
+  
+  public void dialogButton(final String text) {
+    final Procedure1<Pair<VBox, Stage>> _function = (Pair<VBox, Stage> it) -> {
+      final Stage stage = it.getValue();
+      final VBox it_1 = it.getKey();
+      ObservableList<Node> _children = it_1.getChildren();
+      Button _button = new Button("OK");
+      final Procedure1<Button> _function_1 = (Button it_2) -> {
+        final EventHandler<ActionEvent> _function_2 = (ActionEvent it_3) -> {
+          stage.hide();
+        };
+        it_2.setOnAction(_function_2);
+      };
+      Button _doubleArrow = ObjectExtensions.<Button>operator_doubleArrow(_button, _function_1);
+      _children.add(_doubleArrow);
+    };
+    this.dialog(text, _function);
+  }
+  
+  public void dialog(final String text, final Procedure1<? super Pair<VBox, Stage>> controls) {
+    final Runnable _function = () -> {
+      final Stage dialog = new Stage();
+      dialog.initStyle(StageStyle.UNDECORATED);
+      dialog.initModality(Modality.APPLICATION_MODAL);
+      dialog.initOwner(this.stage);
+      StackPane _stackPane = new StackPane();
+      final Procedure1<StackPane> _function_1 = (StackPane it) -> {
+        it.setAlignment(Pos.CENTER);
+        ObservableList<Node> _children = it.getChildren();
+        VBox _vBox = new VBox();
+        final Procedure1<VBox> _function_2 = (VBox it_1) -> {
+          it_1.setAlignment(Pos.CENTER);
+          ObservableList<Node> _children_1 = it_1.getChildren();
+          Text _text = new Text(text);
+          _children_1.add(_text);
+          Pair<VBox, Stage> _mappedTo = Pair.<VBox, Stage>of(it_1, dialog);
+          controls.apply(_mappedTo);
+        };
+        VBox _doubleArrow = ObjectExtensions.<VBox>operator_doubleArrow(_vBox, _function_2);
+        _children.add(_doubleArrow);
+      };
+      final StackPane container = ObjectExtensions.<StackPane>operator_doubleArrow(_stackPane, _function_1);
+      final Scene dialogScene = new Scene(container, 300, 200);
+      dialog.setScene(dialogScene);
+      dialog.show();
+    };
+    Platform.runLater(_function);
   }
   
   public void requestPoints(final PointRequest request) {

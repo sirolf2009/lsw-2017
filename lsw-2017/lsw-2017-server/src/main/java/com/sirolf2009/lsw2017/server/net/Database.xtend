@@ -29,7 +29,7 @@ class Database implements Closeable {
 	@Accessors val PublishSubject<Pair<PointRequest, DBTeam>> pointsDenied
 
 	new() {
-		cluster = Cluster.builder.addContactPoints("localhost").withPort(32769).build()
+		cluster = Cluster.builder.addContactPoints("localhost").withPort(32779).build()
 		session = cluster.connect("lsw2017")
 		 
 		val manager = new MappingManager(session)
