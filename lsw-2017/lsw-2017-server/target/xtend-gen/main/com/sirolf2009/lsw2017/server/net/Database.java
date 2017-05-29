@@ -1,6 +1,7 @@
 package com.sirolf2009.lsw2017.server.net;
 
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.mapping.Mapper;
 import com.datastax.driver.mapping.MappingManager;
@@ -11,6 +12,7 @@ import com.sirolf2009.lsw2017.common.model.PointRequest;
 import io.reactivex.subjects.PublishSubject;
 import java.io.Closeable;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
@@ -18,6 +20,7 @@ import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.xtend.lib.annotations.Accessors;
+import org.eclipse.xtend2.lib.StringConcatenation;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.ObjectExtensions;
@@ -44,7 +47,7 @@ public class Database implements Closeable {
   private final PublishSubject<Pair<PointRequest, DBTeam>> pointsDenied;
   
   public Database() {
-    this.cluster = Cluster.builder().addContactPoints("localhost").withPort(32779).build();
+    this.cluster = Cluster.builder().addContactPoints("localhost").withPort(32769).build();
     this.session = this.cluster.connect("lsw2017");
     final MappingManager manager = new MappingManager(this.session);
     this.mapperTeam = manager.<DBTeam>mapper(DBTeam.class);
@@ -118,9 +121,64 @@ public class Database implements Closeable {
     this.mapperQueue.save(_doubleArrow);
   }
   
-  public DBTeam awardPoints(final PointRequest request) {
-    throw new Error("Unresolved compilation problems:"
-      + "\nType mismatch: cannot convert from String to int");
+  public ResultSet finishBattle(final int battleground, final String team) {
+    ResultSet _xblockexpression = null;
+    {
+      StringConcatenation _builder = new StringConcatenation();
+      _builder.append("DELETE FROM lsw2017.queue where battleground=");
+      _builder.append(battleground);
+      _builder.append(" and first_battler=\'");
+      _builder.append(team);
+      _builder.append("\' ");
+      this.session.execute(_builder.toString());
+      StringConcatenation _builder_1 = new StringConcatenation();
+      _builder_1.append("UPDATE lsw2017.teams SET battleground");
+      _builder_1.append(battleground);
+      _builder_1.append("=true WHERE teamname=\'");
+      _builder_1.append(team);
+      _builder_1.append("\' ");
+      _xblockexpression = this.session.execute(_builder_1.toString());
+    }
+    return _xblockexpression;
+  }
+  
+  public DBTeam awardBattlegroundPoints(final PointRequest request, final int battleground, final int points) {
+    DBTeam _get = this.mapperTeam.get(request.getTeamName());
+    final Procedure1<DBTeam> _function = (DBTeam it) -> {
+      int _points = it.points;
+      it.points = (_points + points);
+      this.save(it);
+      this.finishBattle(battleground, request.getTeamName());
+      Pair<PointRequest, DBTeam> _mappedTo = Pair.<PointRequest, DBTeam>of(request, it);
+      this.pointsAwarded.onNext(_mappedTo);
+    };
+    return ObjectExtensions.<DBTeam>operator_doubleArrow(_get, _function);
+  }
+  
+  public DBTeam awardPoints(final PointRequest request, final int points) {
+    DBTeam _get = this.mapperTeam.get(request.getTeamName());
+    final Procedure1<DBTeam> _function = (DBTeam it) -> {
+      long _currentTime = request.getCurrentTime();
+      long _time = it.lastCheckedIn.getTime();
+      long _minus = (_currentTime - _time);
+      long _millis = Duration.ofMinutes(0).toMillis();
+      boolean _greaterThan = (_minus > _millis);
+      if (_greaterThan) {
+        int _points = it.points;
+        it.points = (_points + points);
+        long _currentTime_1 = request.getCurrentTime();
+        Date _date = new Date(_currentTime_1);
+        it.lastCheckedIn = _date;
+        it.timesCheckedIn++;
+        this.save(it);
+        Pair<PointRequest, DBTeam> _mappedTo = Pair.<PointRequest, DBTeam>of(request, it);
+        this.pointsAwarded.onNext(_mappedTo);
+      } else {
+        Pair<PointRequest, DBTeam> _mappedTo_1 = Pair.<PointRequest, DBTeam>of(request, it);
+        this.pointsDenied.onNext(_mappedTo_1);
+      }
+    };
+    return ObjectExtensions.<DBTeam>operator_doubleArrow(_get, _function);
   }
   
   public int getPoints(final String teamName) {

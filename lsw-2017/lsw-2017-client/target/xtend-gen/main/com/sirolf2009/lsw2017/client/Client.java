@@ -18,7 +18,6 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-import javafx.scene.control.ToggleButton;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
@@ -162,30 +161,6 @@ public class Client extends Application {
       };
       VBox _doubleArrow_1 = ObjectExtensions.<VBox>operator_doubleArrow(_vBox, _function_7);
       _children_1.add(_doubleArrow_1);
-      ObservableList<Node> _children_2 = it.getChildren();
-      StackPane _stackPane_2 = new StackPane();
-      final Procedure1<StackPane> _function_8 = (StackPane it_1) -> {
-        it_1.setAlignment(Pos.TOP_LEFT);
-        ObservableList<Node> _children_3 = it_1.getChildren();
-        ToggleButton _toggleButton = new ToggleButton("");
-        final Procedure1<ToggleButton> _function_9 = (ToggleButton it_2) -> {
-          final EventHandler<ActionEvent> _function_10 = (ActionEvent event) -> {
-            boolean _isFullScreen = stage.isFullScreen();
-            boolean _not = (!_isFullScreen);
-            stage.setFullScreen(_not);
-          };
-          it_2.setOnAction(_function_10);
-          ObservableList<String> _styleClass = it_2.getStyleClass();
-          _styleClass.add("fullscreen-button");
-          it_2.setMinHeight(32);
-          it_2.setMinWidth(32);
-        };
-        ToggleButton _doubleArrow_2 = ObjectExtensions.<ToggleButton>operator_doubleArrow(_toggleButton, _function_9);
-        _children_3.add(_doubleArrow_2);
-        it_1.setPickOnBounds(false);
-      };
-      StackPane _doubleArrow_2 = ObjectExtensions.<StackPane>operator_doubleArrow(_stackPane_2, _function_8);
-      _children_2.add(_doubleArrow_2);
     };
     StackPane _doubleArrow = ObjectExtensions.<StackPane>operator_doubleArrow(_stackPane, _function);
     Scene _scene = new Scene(_doubleArrow, 800, 600);

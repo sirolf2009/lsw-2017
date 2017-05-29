@@ -4,8 +4,10 @@ import com.sirolf2009.lsw2017.common.model.DBQueue;
 import com.sirolf2009.lsw2017.common.model.DBTeam;
 import com.sirolf2009.lsw2017.common.model.Handshake;
 import com.sirolf2009.lsw2017.common.model.NotifyBattleground;
+import com.sirolf2009.lsw2017.common.model.NotifySuccesful;
 import com.sirolf2009.lsw2017.common.model.NotifyWait;
 import com.sirolf2009.lsw2017.common.model.PointRequest;
+import com.sirolf2009.lsw2017.server.PointsParser;
 import com.sirolf2009.lsw2017.server.net.Connector;
 import com.sirolf2009.lsw2017.server.net.Database;
 import io.reactivex.functions.Consumer;
@@ -18,10 +20,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.xtext.xbase.lib.Exceptions;
+import org.eclipse.xtext.xbase.lib.Extension;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
+import org.eclipse.xtext.xbase.lib.InputOutput;
 import org.eclipse.xtext.xbase.lib.IterableExtensions;
 import org.eclipse.xtext.xbase.lib.Pair;
 
@@ -29,6 +34,11 @@ import org.eclipse.xtext.xbase.lib.Pair;
 public class Server implements Closeable {
   private final static Logger log = LogManager.getLogger();
   
+  private final static Pattern pointsPattern = Pattern.compile("p([0-9]+)");
+  
+  private final static Pattern battlegroundPattern = Pattern.compile("s([0-9])-([0-9]+)");
+  
+  @Extension
   private final Connector connector;
   
   private final Database database;
@@ -72,19 +82,33 @@ public class Server implements Closeable {
         Server.log.info("Creating new team");
         this.database.createNewTeam(it.getTeamName());
       }
-      boolean _endsWith = it.getPoints().endsWith("-vindikleuks");
-      if (_endsWith) {
+      boolean _matches = PointsParser.matches(it.getPoints(), Server.pointsPattern);
+      if (_matches) {
+        final int likes = PointsParser.extractNumber(it.getPoints(), Server.pointsPattern);
         String _teamName = it.getTeamName();
         String _plus = ("Awarding " + _teamName);
         String _plus_1 = (_plus + " ");
-        String _points = it.getPoints();
-        String _plus_2 = (_plus_1 + _points);
+        String _plus_2 = (_plus_1 + Integer.valueOf(likes));
         String _plus_3 = (_plus_2 + " points");
         Server.log.debug(_plus_3);
-        this.database.awardPoints(it);
+        this.database.awardPoints(it, likes);
       } else {
-        boolean _contains = it.getPoints().contains("-vindikleuks-verliezer-slachtveld-");
-        if (_contains) {
+        boolean _matches_1 = PointsParser.matches(it.getPoints(), Server.battlegroundPattern);
+        if (_matches_1) {
+          final List<Integer> numbers = PointsParser.extractAllNumbers(it.getPoints(), Server.battlegroundPattern);
+          InputOutput.<List<Integer>>println(numbers);
+          final Integer battleground = numbers.get(0);
+          final Integer points = numbers.get(1);
+          String _teamName_1 = it.getTeamName();
+          String _plus_4 = ("Awarding " + _teamName_1);
+          String _plus_5 = (_plus_4 + " ");
+          String _plus_6 = (_plus_5 + points);
+          String _plus_7 = (_plus_6 + " points from battleground ");
+          String _plus_8 = (_plus_7 + battleground);
+          Server.log.debug(_plus_8);
+          this.database.awardBattlegroundPoints(it, (battleground).intValue(), (points).intValue());
+        } else {
+          Server.log.warn(("I don\'t know what this is supposed to mean " + it));
         }
       }
     };
@@ -96,13 +120,16 @@ public class Server implements Closeable {
       String _hostName = it.getKey().getHostName();
       String _plus_2 = (_plus_1 + _hostName);
       Server.log.info(_plus_2);
-      if (((it.getValue().timesCheckedIn % 6) == 0)) {
+      if (((it.getValue().timesCheckedIn % 2) == 0)) {
         Server.log.info((it.getValue().teamName + " is now allowed to go to the battleground"));
         String _get = this.battlegroundQueues.get(it.getKey().getHostName());
         int _moveTeamToBattleground = this.moveTeamToBattleground(it);
         NotifyBattleground _notifyBattleground = new NotifyBattleground(it.getValue().teamName, _moveTeamToBattleground);
         this.connector.send(_get, _notifyBattleground);
       } else {
+        String _get_1 = this.acceptedQueues.get(it.getKey().getHostName());
+        NotifySuccesful _notifySuccesful = new NotifySuccesful(it.getValue().teamName);
+        this.connector.send(_get_1, _notifySuccesful);
       }
     };
     this.database.getPointsAwarded().subscribeOn(Schedulers.io()).subscribe(_function_6);

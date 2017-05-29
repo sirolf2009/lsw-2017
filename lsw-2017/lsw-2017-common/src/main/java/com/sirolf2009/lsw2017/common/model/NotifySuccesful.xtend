@@ -5,13 +5,11 @@ import org.eclipse.xtend.lib.annotations.Accessors
 @Accessors class NotifySuccesful {
 	
 	var String teamName
-	var int points
 	
 	new() {}
 	
-	new(String teamName, int points) {
+	new(String teamName) {
 		this.teamName = teamName
-		this.points = points
 	}
 	
 }

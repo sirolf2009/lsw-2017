@@ -56,29 +56,44 @@ class Connector implements Closeable {
 		acceptedQueue = channel.queueDeclare().queue
 		deniedQueue = channel.queueDeclare().queue
 		battlegroundQueue = channel.queueDeclare().queue
-		CONNECTED.send(new Handshake(Hostname.hostname, acceptedQueue, deniedQueue, battlegroundQueue))
+		val heartbeat = new Thread [
+			while (true) {
+				try {
+					handshake()
+					Thread.sleep(10 * 1000)
+				} catch (Exception e) {
+					log.error("Failed to handshake")
+				}
+			}
+		]
+		heartbeat.daemon = true
+		heartbeat.start()
 
 		channel.basicConsume(acceptedQueue, true, new DefaultConsumer(channel) {
 			override handleDelivery(String consumerTag, Envelope envelope, BasicProperties properties,
 				byte[] body) throws IOException {
 				val notify = new Gson().fromJson(new String(body), NotifySuccesful)
-				dialogTimer('''«notify.teamName» has received «notify.points» points''', Duration.seconds(2))
+				dialogTimer('''«notify.teamName» heeft zijn punten ontvangen!''', Duration.seconds(2))
 			}
 		})
 		channel.basicConsume(deniedQueue, true, new DefaultConsumer(channel) {
 			override handleDelivery(String consumerTag, Envelope envelope, BasicProperties properties,
 				byte[] body) throws IOException {
 				val notify = new Gson().fromJson(new String(body), NotifyWait)
-				dialogButton('''«notify.teamName» must wait a little while longer''')
+				dialogButton('''«notify.teamName» moet nog iets langer wachten!''')
 			}
 		})
 		channel.basicConsume(battlegroundQueue, true, new DefaultConsumer(channel) {
 			override handleDelivery(String consumerTag, Envelope envelope, BasicProperties properties,
 				byte[] body) throws IOException {
 				val notify = new Gson().fromJson(new String(body), NotifyBattleground)
-				dialogButton('''«notify.teamName» must now go to the battleground «notify.battleground»''')
+				dialogButton('''«notify.teamName» moet nu naar slachtveld «notify.battleground»''')
 			}
 		})
+	}
+
+	def handshake() {
+		CONNECTED.send(new Handshake(Hostname.hostname, acceptedQueue, deniedQueue, battlegroundQueue))
 	}
 
 	def dialogTimer(String text, Duration duration) {
@@ -118,6 +133,7 @@ class Connector implements Closeable {
 			val dialogScene = new Scene(container, 300, 200)
 			dialog.scene = dialogScene
 			dialog.show()
+			dialog.toFront()
 		]
 	}
 

@@ -69,9 +69,24 @@ public class Connector implements Closeable {
       this.acceptedQueue = this.channel.queueDeclare().getQueue();
       this.deniedQueue = this.channel.queueDeclare().getQueue();
       this.battlegroundQueue = this.channel.queueDeclare().getQueue();
-      String _hostname = Hostname.getHostname();
-      Handshake _handshake = new Handshake(_hostname, this.acceptedQueue, this.deniedQueue, this.battlegroundQueue);
-      this.send(Queues.CONNECTED, _handshake);
+      final Runnable _function = () -> {
+        while (true) {
+          try {
+            this.handshake();
+            Thread.sleep((10 * 1000));
+          } catch (final Throwable _t) {
+            if (_t instanceof Exception) {
+              final Exception e = (Exception)_t;
+              Connector.log.error("Failed to handshake");
+            } else {
+              throw Exceptions.sneakyThrow(_t);
+            }
+          }
+        }
+      };
+      final Thread heartbeat = new Thread(_function);
+      heartbeat.setDaemon(true);
+      heartbeat.start();
       this.channel.basicConsume(this.acceptedQueue, true, new DefaultConsumer(this.channel) {
         @Override
         public void handleDelivery(final String consumerTag, final Envelope envelope, final AMQP.BasicProperties properties, final byte[] body) throws IOException {
@@ -81,10 +96,7 @@ public class Connector implements Closeable {
           StringConcatenation _builder = new StringConcatenation();
           String _teamName = notify.getTeamName();
           _builder.append(_teamName);
-          _builder.append(" has received ");
-          int _points = notify.getPoints();
-          _builder.append(_points);
-          _builder.append(" points");
+          _builder.append(" heeft zijn punten ontvangen!");
           Connector.this.dialogTimer(_builder.toString(), Duration.seconds(2));
         }
       });
@@ -97,7 +109,7 @@ public class Connector implements Closeable {
           StringConcatenation _builder = new StringConcatenation();
           String _teamName = notify.getTeamName();
           _builder.append(_teamName);
-          _builder.append(" must wait a little while longer");
+          _builder.append(" moet nog iets langer wachten!");
           Connector.this.dialogButton(_builder.toString());
         }
       });
@@ -110,7 +122,7 @@ public class Connector implements Closeable {
           StringConcatenation _builder = new StringConcatenation();
           String _teamName = notify.getTeamName();
           _builder.append(_teamName);
-          _builder.append(" must now go to the battleground ");
+          _builder.append(" moet nu naar slachtveld ");
           int _battleground = notify.getBattleground();
           _builder.append(_battleground);
           Connector.this.dialogButton(_builder.toString());
@@ -119,6 +131,12 @@ public class Connector implements Closeable {
     } catch (Throwable _e) {
       throw Exceptions.sneakyThrow(_e);
     }
+  }
+  
+  public void handshake() {
+    String _hostname = Hostname.getHostname();
+    Handshake _handshake = new Handshake(_hostname, this.acceptedQueue, this.deniedQueue, this.battlegroundQueue);
+    this.send(Queues.CONNECTED, _handshake);
   }
   
   public void dialogTimer(final String text, final Duration duration) {
@@ -178,6 +196,7 @@ public class Connector implements Closeable {
       final Scene dialogScene = new Scene(container, 300, 200);
       dialog.setScene(dialogScene);
       dialog.show();
+      dialog.toFront();
     };
     Platform.runLater(_function);
   }

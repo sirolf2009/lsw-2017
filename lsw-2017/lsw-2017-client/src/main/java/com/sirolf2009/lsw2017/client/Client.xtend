@@ -2,14 +2,15 @@ package com.sirolf2009.lsw2017.client
 
 import com.github.plushaze.traynotification.notification.Notifications
 import com.github.plushaze.traynotification.notification.TrayNotification
+import com.kstruct.gethostname4j.Hostname
 import com.sirolf2009.lsw2017.client.net.Connector
 import com.sirolf2009.lsw2017.common.model.PointRequest
 import javafx.application.Platform
 import javafx.geometry.Pos
 import javafx.scene.Scene
 import javafx.scene.control.Button
+import javafx.scene.control.Label
 import javafx.scene.control.TextField
-import javafx.scene.control.ToggleButton
 import javafx.scene.input.KeyCode
 import javafx.scene.input.KeyEvent
 import javafx.scene.layout.HBox
@@ -20,8 +21,6 @@ import javafx.stage.Stage
 import javafx.util.Duration
 import org.apache.logging.log4j.LogManager
 import xtendfx.FXApp
-import com.kstruct.gethostname4j.Hostname
-import javafx.scene.control.Label
 
 @FXApp class Client {
 
@@ -99,18 +98,18 @@ import javafx.scene.control.Label
 					]
 				]
 			]
-			children += new StackPane => [
-				alignment = Pos.TOP_LEFT
-				children += new ToggleButton("") => [
-					onAction = [ event |
-						stage.fullScreen = !stage.isFullScreen
-					]
-					styleClass += "fullscreen-button"
-					minHeight = 32
-					minWidth = 32
-				]
-				pickOnBounds = false
-			]
+//			children += new StackPane => [
+//				alignment = Pos.TOP_LEFT
+//				children += new ToggleButton("") => [
+//					onAction = [ event |
+//						stage.fullScreen = !stage.isFullScreen
+//					]
+//					styleClass += "fullscreen-button"
+//					minHeight = 32
+//					minWidth = 32
+//				]
+//				pickOnBounds = false
+//			]
 		], 800, 600)
 		stage.show()
 	}
