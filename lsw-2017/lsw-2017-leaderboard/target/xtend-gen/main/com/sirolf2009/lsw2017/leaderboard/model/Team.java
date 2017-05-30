@@ -19,30 +19,31 @@ import xtendfx.beans.FXBindable;
 @Accessors
 @SuppressWarnings("all")
 public class Team {
-  public Team(final int likes, final String name, final String subcamp, final long lastCheckedIn) {
-    this.setLikes(likes);
+  public Team(final String team, final String name, final int likes, final String subcamp, final long lastCheckedIn) {
+    this.setTeam(team);
     this.setName(name);
+    this.setLikes(likes);
     this.setSubcamp(subcamp);
     this.setLastCheckedIn(lastCheckedIn);
   }
   
-  private final static int DEFAULT_LIKES = 0;
+  private final static String DEFAULT_TEAM = null;
   
-  private SimpleIntegerProperty likesProperty;
+  private SimpleStringProperty teamProperty;
   
-  public int getLikes() {
-    return (this.likesProperty != null)? this.likesProperty.get() : DEFAULT_LIKES;
+  public String getTeam() {
+    return (this.teamProperty != null)? this.teamProperty.get() : DEFAULT_TEAM;
   }
   
-  public void setLikes(final int likes) {
-    this.likesProperty().set(likes);
+  public void setTeam(final String team) {
+    this.teamProperty().set(team);
   }
   
-  public IntegerProperty likesProperty() {
-    if (this.likesProperty == null) { 
-    	this.likesProperty = new SimpleIntegerProperty(this, "likes", DEFAULT_LIKES);
+  public StringProperty teamProperty() {
+    if (this.teamProperty == null) { 
+    	this.teamProperty = new SimpleStringProperty(this, "team", DEFAULT_TEAM);
     }
-    return this.likesProperty;
+    return this.teamProperty;
   }
   
   private final static String DEFAULT_NAME = null;
@@ -62,6 +63,25 @@ public class Team {
     	this.nameProperty = new SimpleStringProperty(this, "name", DEFAULT_NAME);
     }
     return this.nameProperty;
+  }
+  
+  private final static int DEFAULT_LIKES = 0;
+  
+  private SimpleIntegerProperty likesProperty;
+  
+  public int getLikes() {
+    return (this.likesProperty != null)? this.likesProperty.get() : DEFAULT_LIKES;
+  }
+  
+  public void setLikes(final int likes) {
+    this.likesProperty().set(likes);
+  }
+  
+  public IntegerProperty likesProperty() {
+    if (this.likesProperty == null) { 
+    	this.likesProperty = new SimpleIntegerProperty(this, "likes", DEFAULT_LIKES);
+    }
+    return this.likesProperty;
   }
   
   private final static String DEFAULT_SUBCAMP = null;

@@ -3,6 +3,7 @@ package com.sirolf2009.lsw2017.leaderboard;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
+import com.sirolf2009.lsw2017.leaderboard.Names;
 import com.sirolf2009.lsw2017.leaderboard.model.Team;
 import java.util.Date;
 import java.util.function.Consumer;
@@ -29,7 +30,7 @@ import xtendfx.FXApp;
 @FXApp
 @SuppressWarnings("all")
 public class Leaderboard extends Application {
-  private final ObservableList<Team> testData = FXCollections.<Team>observableArrayList(new Team(42, "sirolf2009", "Krummi", 0), new Team((-100), "Ólavur Riddararós", "Týr", 0), new Team(1234, "Rotlaust Tre Fell", "Wardruna", 0));
+  private final ObservableList<Team> teams = FXCollections.<Team>observableArrayList();
   
   @Override
   public void start(final Stage it) throws Exception {
@@ -40,18 +41,20 @@ public class Leaderboard extends Application {
       while (true) {
         try {
           final Function1<Row, Team> _function_1 = (Row it_1) -> {
-            int _int = it_1.getInt("points");
+            String _villainName = Names.getVillainName(it_1.getString("teamname"));
             String _string = it_1.getString("teamname");
+            int _int = it_1.getInt("points");
+            String _subkamp = Names.getSubkamp(it_1.getString("teamname"));
             long _time = it_1.<Date>get("lastcheckedin", Date.class).getTime();
-            return new Team(_int, _string, "TODO", _time);
+            return new Team(_villainName, _string, _int, _subkamp, _time);
           };
           final Consumer<Team> _function_2 = (Team it_1) -> {
             final Function1<Team, Boolean> _function_3 = (Team data) -> {
               return Boolean.valueOf(data.getName().equals(it_1.getName()));
             };
-            final Team existing = IterableExtensions.<Team>findFirst(this.testData, _function_3);
+            final Team existing = IterableExtensions.<Team>findFirst(this.teams, _function_3);
             if ((existing == null)) {
-              this.testData.add(it_1);
+              this.teams.add(it_1);
             } else {
               existing.setLikes(it_1.getLikes());
             }
@@ -115,29 +118,36 @@ public class Leaderboard extends Application {
       _rowConstraints_4.add(_doubleArrow_5);
       TableView<Team> _tableView = new TableView<Team>();
       final Procedure1<TableView<Team>> _function_8 = (TableView<Team> it_2) -> {
-        final TableColumn<Team, Number> likesCol = new TableColumn<Team, Number>("Vind ik leuks");
-        final Callback<TableColumn.CellDataFeatures<Team, Number>, ObservableValue<Number>> _function_9 = (TableColumn.CellDataFeatures<Team, Number> it_3) -> {
-          return it_3.getValue().likesProperty();
+        final TableColumn<Team, String> teamCol = new TableColumn<Team, String>("Team");
+        final Callback<TableColumn.CellDataFeatures<Team, String>, ObservableValue<String>> _function_9 = (TableColumn.CellDataFeatures<Team, String> it_3) -> {
+          return it_3.getValue().teamProperty();
         };
-        likesCol.setCellValueFactory(_function_9);
+        teamCol.setCellValueFactory(_function_9);
         final TableColumn<Team, String> nameCol = new TableColumn<Team, String>("Naam");
         final Callback<TableColumn.CellDataFeatures<Team, String>, ObservableValue<String>> _function_10 = (TableColumn.CellDataFeatures<Team, String> it_3) -> {
           return it_3.getValue().nameProperty();
         };
         nameCol.setCellValueFactory(_function_10);
+        final TableColumn<Team, Number> likesCol = new TableColumn<Team, Number>("Vind ik leuks");
+        final Callback<TableColumn.CellDataFeatures<Team, Number>, ObservableValue<Number>> _function_11 = (TableColumn.CellDataFeatures<Team, Number> it_3) -> {
+          return it_3.getValue().likesProperty();
+        };
+        likesCol.setCellValueFactory(_function_11);
         final TableColumn<Team, String> subcampCol = new TableColumn<Team, String>("Subkamp");
-        final Callback<TableColumn.CellDataFeatures<Team, String>, ObservableValue<String>> _function_11 = (TableColumn.CellDataFeatures<Team, String> it_3) -> {
+        final Callback<TableColumn.CellDataFeatures<Team, String>, ObservableValue<String>> _function_12 = (TableColumn.CellDataFeatures<Team, String> it_3) -> {
           return it_3.getValue().subcampProperty();
         };
-        subcampCol.setCellValueFactory(_function_11);
+        subcampCol.setCellValueFactory(_function_12);
         ObservableList<TableColumn<Team, ?>> _columns = it_2.getColumns();
-        _columns.add(likesCol);
+        _columns.add(teamCol);
         ObservableList<TableColumn<Team, ?>> _columns_1 = it_2.getColumns();
         _columns_1.add(nameCol);
         ObservableList<TableColumn<Team, ?>> _columns_2 = it_2.getColumns();
-        _columns_2.add(subcampCol);
+        _columns_2.add(likesCol);
+        ObservableList<TableColumn<Team, ?>> _columns_3 = it_2.getColumns();
+        _columns_3.add(subcampCol);
         it_2.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        it_2.setItems(this.testData);
+        it_2.setItems(this.teams);
       };
       TableView<Team> _doubleArrow_6 = ObjectExtensions.<TableView<Team>>operator_doubleArrow(_tableView, _function_8);
       it_1.add(_doubleArrow_6, 1, 1);

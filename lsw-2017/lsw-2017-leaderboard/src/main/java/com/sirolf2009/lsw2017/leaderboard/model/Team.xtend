@@ -7,14 +7,16 @@ import org.eclipse.xtend.lib.annotations.Accessors
 
 @FXBindable @ToString @EqualsHashCode @Accessors class Team {
 	
-	int likes
+	String team
 	String name
+	int likes
 	String subcamp
 	long lastCheckedIn
 	
-	new(int likes, String name, String subcamp, long lastCheckedIn) {
-		this.likes = likes
+	new(String team, String name, int likes, String subcamp, long lastCheckedIn) {
+		this.team = team
 		this.name = name
+		this.likes = likes
 		this.subcamp = subcamp
 		this.lastCheckedIn = lastCheckedIn
 	}
