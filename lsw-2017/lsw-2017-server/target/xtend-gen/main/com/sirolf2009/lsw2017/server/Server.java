@@ -146,6 +146,18 @@ public class Server implements Closeable {
       this.connector.send(_get, _notifyWait);
     };
     this.database.getPointsDenied().subscribeOn(Schedulers.io()).subscribe(_function_7);
+    final Consumer<Pair<PointRequest, DBTeam>> _function_8 = (Pair<PointRequest, DBTeam> it) -> {
+      String _points = it.getKey().getPoints();
+      String _plus = ((("Awarded " + it.getValue().teamName) + " ") + _points);
+      String _plus_1 = (_plus + " points from ");
+      String _hostName = it.getKey().getHostName();
+      String _plus_2 = (_plus_1 + _hostName);
+      Server.log.info(_plus_2);
+      String _get = this.acceptedQueues.get(it.getKey().getHostName());
+      NotifySuccesful _notifySuccesful = new NotifySuccesful(it.getValue().teamName);
+      this.connector.send(_get, _notifySuccesful);
+    };
+    this.database.getBattlegroundAwarded().subscribeOn(Schedulers.io()).subscribe(_function_8);
   }
   
   public int moveTeamToBattleground(final Pair<PointRequest, DBTeam> team) {

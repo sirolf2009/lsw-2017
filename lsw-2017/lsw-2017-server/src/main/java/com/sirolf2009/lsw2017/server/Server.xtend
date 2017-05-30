@@ -74,7 +74,8 @@ class Server implements Closeable {
 //			if(value.timesCheckedIn % 6 == 0) {
 			if (value.timesCheckedIn % 2 == 0) {
 				log.info(value.teamName + " is now allowed to go to the battleground")
-				battlegroundQueues.get(key.hostName).send(new NotifyBattleground(value.teamName, moveTeamToBattleground(it)))
+				battlegroundQueues.get(key.hostName).send(
+					new NotifyBattleground(value.teamName, moveTeamToBattleground(it)))
 			} else {
 				acceptedQueues.get(key.hostName).send(new NotifySuccesful(value.teamName))
 			}
@@ -82,6 +83,10 @@ class Server implements Closeable {
 		database.pointsDenied.subscribeOn(Schedulers.io).subscribe [
 			log.info("Denied " + value.teamName + " " + key.points + " points from " + key.hostName)
 			connector.send(deniedQueues.get(key.hostName), new NotifyWait(key.teamName))
+		]
+		database.battlegroundAwarded.subscribeOn(Schedulers.io).subscribe [
+			log.info("Awarded " + value.teamName + " " + key.points + " points from " + key.hostName)
+			acceptedQueues.get(key.hostName).send(new NotifySuccesful(value.teamName))
 		]
 	}
 
@@ -99,7 +104,7 @@ class Server implements Closeable {
 			database.addTeamToBattleground(battleground, team.value)
 			return battleground
 		} else {
-			val joinable = queues.groupBy[battleground].entrySet.stream.sorted [a,b|
+			val joinable = queues.groupBy[battleground].entrySet.stream.sorted [ a, b |
 				a.value.size.compareTo(b.value.size)
 			].findFirst
 			if (joinable.isPresent) {

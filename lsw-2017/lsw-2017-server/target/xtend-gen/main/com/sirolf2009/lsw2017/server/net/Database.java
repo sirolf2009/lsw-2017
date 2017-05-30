@@ -17,6 +17,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.xtend.lib.annotations.Accessors;
@@ -46,6 +47,9 @@ public class Database implements Closeable {
   @Accessors
   private final PublishSubject<Pair<PointRequest, DBTeam>> pointsDenied;
   
+  @Accessors
+  private final PublishSubject<Pair<PointRequest, DBTeam>> battlegroundAwarded;
+  
   public Database() {
     this.cluster = Cluster.builder().addContactPoints("localhost").withPort(32769).build();
     this.session = this.cluster.connect("lsw2017");
@@ -54,6 +58,7 @@ public class Database implements Closeable {
     this.mapperQueue = manager.<DBQueue>mapper(DBQueue.class);
     this.pointsAwarded = PublishSubject.<Pair<PointRequest, DBTeam>>create();
     this.pointsDenied = PublishSubject.<Pair<PointRequest, DBTeam>>create();
+    this.battlegroundAwarded = PublishSubject.<Pair<PointRequest, DBTeam>>create();
     Database.log.info("Database connection initialized");
   }
   
@@ -131,6 +136,20 @@ public class Database implements Closeable {
       _builder.append(team);
       _builder.append("\' ");
       this.session.execute(_builder.toString());
+      final Function1<DBQueue, Boolean> _function = (DBQueue queue) -> {
+        return Boolean.valueOf((((queue.getBattleground() == battleground) && (queue.getSecond_battler() != null)) && queue.getSecond_battler().equals(team)));
+      };
+      final Consumer<DBQueue> _function_1 = (DBQueue it) -> {
+        StringConcatenation _builder_1 = new StringConcatenation();
+        _builder_1.append("DELETE FROM lsw2017.queue where battleground=");
+        _builder_1.append(battleground);
+        _builder_1.append(" and first_battler=\'");
+        String _first_battler = it.getFirst_battler();
+        _builder_1.append(_first_battler);
+        _builder_1.append("\' ");
+        this.session.execute(_builder_1.toString());
+      };
+      IterableExtensions.<DBQueue>filter(this.getAllQueues(), _function).forEach(_function_1);
       StringConcatenation _builder_1 = new StringConcatenation();
       _builder_1.append("UPDATE lsw2017.teams SET battleground");
       _builder_1.append(battleground);
@@ -150,7 +169,7 @@ public class Database implements Closeable {
       this.save(it);
       this.finishBattle(battleground, request.getTeamName());
       Pair<PointRequest, DBTeam> _mappedTo = Pair.<PointRequest, DBTeam>of(request, it);
-      this.pointsAwarded.onNext(_mappedTo);
+      this.battlegroundAwarded.onNext(_mappedTo);
     };
     return ObjectExtensions.<DBTeam>operator_doubleArrow(_get, _function);
   }
@@ -229,5 +248,10 @@ public class Database implements Closeable {
   @Pure
   public PublishSubject<Pair<PointRequest, DBTeam>> getPointsDenied() {
     return this.pointsDenied;
+  }
+  
+  @Pure
+  public PublishSubject<Pair<PointRequest, DBTeam>> getBattlegroundAwarded() {
+    return this.battlegroundAwarded;
   }
 }

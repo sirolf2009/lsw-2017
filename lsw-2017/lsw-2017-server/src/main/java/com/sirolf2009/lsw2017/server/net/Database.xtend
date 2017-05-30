@@ -27,6 +27,7 @@ class Database implements Closeable {
 
 	@Accessors val PublishSubject<Pair<PointRequest, DBTeam>> pointsAwarded
 	@Accessors val PublishSubject<Pair<PointRequest, DBTeam>> pointsDenied
+	@Accessors val PublishSubject<Pair<PointRequest, DBTeam>> battlegroundAwarded
 
 	new() {
 		cluster = Cluster.builder.addContactPoints("localhost").withPort(32769).build()
@@ -38,6 +39,7 @@ class Database implements Closeable {
 
 		pointsAwarded = PublishSubject.create()
 		pointsDenied = PublishSubject.create()
+		battlegroundAwarded = PublishSubject.create()
 
 		log.info("Database connection initialized")
 	}
@@ -84,6 +86,9 @@ class Database implements Closeable {
 
 	def finishBattle(int battleground, String team) {
 		session.execute('''DELETE FROM lsw2017.queue where battleground=«battleground» and first_battler='«team»' ''')
+		allQueues.filter[queue| queue.battleground == battleground && queue.second_battler !== null && queue.second_battler.equals(team)].forEach[
+			session.execute('''DELETE FROM lsw2017.queue where battleground=«battleground» and first_battler='«first_battler»' ''')
+		]
 		session.execute('''UPDATE lsw2017.teams SET battleground«battleground»=true WHERE teamname='«team»' ''')
 	}
 
@@ -92,7 +97,7 @@ class Database implements Closeable {
 			it.points += points
 			save()
 			finishBattle(battleground, request.teamName)
-			pointsAwarded.onNext(request -> it)
+			battlegroundAwarded.onNext(request -> it)
 		]
 	}
 
