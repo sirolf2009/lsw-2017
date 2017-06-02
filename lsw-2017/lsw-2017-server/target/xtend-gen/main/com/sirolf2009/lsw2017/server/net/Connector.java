@@ -35,6 +35,7 @@ public class Connector {
       final ConnectionFactory factory = new ConnectionFactory();
       factory.setHost("localhost");
       factory.setPort(5672);
+      factory.setVirtualHost("/floris");
       final Connection connection = factory.newConnection();
       this.channel = connection.createChannel();
       Queues.declareQueues(this.channel);

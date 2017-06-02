@@ -22,10 +22,15 @@ import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.layout.CornerRadii;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.RowConstraints;
 import javafx.scene.layout.StackPane;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
 import javafx.stage.Stage;
 import javafx.util.Callback;
 import org.eclipse.xtext.xbase.lib.Exceptions;
@@ -47,7 +52,7 @@ public class Leaderboard extends Application {
       Date _xblockexpression = null;
       {
         final Calendar cal = Calendar.getInstance();
-        cal.set(2017, Calendar.JUNE, 3, 15, 0, 0);
+        cal.set(2017, Calendar.JUNE, 3, 17, 0, 0);
         _xblockexpression = cal.getTime();
       }
       return _xblockexpression;
@@ -58,7 +63,7 @@ public class Leaderboard extends Application {
   public void start(final Stage it) {
     try {
       it.setTitle("LSW 2017 leaderboard");
-      final Cluster cluster = Cluster.builder().addContactPoint("localhost").withPort(32774).build();
+      final Cluster cluster = Cluster.builder().addContactPoint("localhost").withPort(32769).build();
       final Session session = cluster.connect("lsw2017");
       final Runnable _function = () -> {
         while (true) {
@@ -97,7 +102,6 @@ public class Leaderboard extends Application {
       new Thread(_function).start();
       StackPane _stackPane = new StackPane();
       final Procedure1<StackPane> _function_1 = (StackPane it_1) -> {
-        ObservableList<Node> _children = it_1.getChildren();
         GridPane _gridPane = new GridPane();
         final Procedure1<GridPane> _function_2 = (GridPane it_2) -> {
           ObservableList<ColumnConstraints> _columnConstraints = it_2.getColumnConstraints();
@@ -178,17 +182,21 @@ public class Leaderboard extends Application {
           TableView<Team> _doubleArrow_6 = ObjectExtensions.<TableView<Team>>operator_doubleArrow(_tableView, _function_9);
           it_2.add(_doubleArrow_6, 1, 1);
         };
-        GridPane _doubleArrow = ObjectExtensions.<GridPane>operator_doubleArrow(_gridPane, _function_2);
-        _children.add(_doubleArrow);
+        final GridPane table = ObjectExtensions.<GridPane>operator_doubleArrow(_gridPane, _function_2);
+        ObservableList<Node> _children = it_1.getChildren();
+        _children.add(table);
         ObservableList<Node> _children_1 = it_1.getChildren();
         StackPane _stackPane_1 = new StackPane();
-        final Procedure1<StackPane> _function_3 = (StackPane it_2) -> {
-          it_2.setAlignment(Pos.BOTTOM_RIGHT);
-          ObservableList<Node> _children_2 = it_2.getChildren();
+        final Procedure1<StackPane> _function_3 = (StackPane pane) -> {
+          BackgroundFill _backgroundFill = new BackgroundFill(Color.BLUE, CornerRadii.EMPTY, Insets.EMPTY);
+          Background _background = new Background(_backgroundFill);
+          it_1.setBackground(_background);
+          pane.setAlignment(Pos.BOTTOM_RIGHT);
+          ObservableList<Node> _children_2 = pane.getChildren();
           Label _label = new Label("time");
-          final Procedure1<Label> _function_4 = (Label it_3) -> {
+          final Procedure1<Label> _function_4 = (Label it_2) -> {
             Insets _insets = new Insets(8);
-            it_3.setPadding(_insets);
+            it_2.setPadding(_insets);
             final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss");
             final Runnable _function_5 = () -> {
               try {
@@ -197,9 +205,21 @@ public class Leaderboard extends Application {
                     final Runnable _function_6 = () -> {
                       long _time = this.endDate.getTime();
                       long _currentTimeMillis = System.currentTimeMillis();
-                      long _minus = (_time - _currentTimeMillis);
-                      Date _date = new Date(_minus);
-                      it_3.setText(timeFormat.format(_date));
+                      final long timeLeft = (_time - _currentTimeMillis);
+                      Date _date = new Date(timeLeft);
+                      it_2.setText(timeFormat.format(_date));
+                      if ((table.isVisible() && (Duration.ofMillis(timeLeft).toMinutes() <= 10))) {
+                        it_2.setMinHeight(8000);
+                        it_2.setMaxHeight(8000);
+                        it_2.setMinWidth(8000);
+                        it_2.setMaxWidth(8000);
+                        pane.setAlignment(Pos.CENTER);
+                        it_2.setAlignment(Pos.CENTER);
+                        String _name = it_2.getFont().getName();
+                        Font _font = new Font(_name, 100);
+                        it_2.setFont(_font);
+                        table.setVisible(false);
+                      }
                     };
                     Platform.runLater(_function_6);
                     Thread.sleep(Duration.ofSeconds(1).toMillis());
@@ -211,11 +231,11 @@ public class Leaderboard extends Application {
             };
             new Thread(_function_5).start();
           };
-          Label _doubleArrow_1 = ObjectExtensions.<Label>operator_doubleArrow(_label, _function_4);
-          _children_2.add(_doubleArrow_1);
+          Label _doubleArrow = ObjectExtensions.<Label>operator_doubleArrow(_label, _function_4);
+          _children_2.add(_doubleArrow);
         };
-        StackPane _doubleArrow_1 = ObjectExtensions.<StackPane>operator_doubleArrow(_stackPane_1, _function_3);
-        _children_1.add(_doubleArrow_1);
+        StackPane _doubleArrow = ObjectExtensions.<StackPane>operator_doubleArrow(_stackPane_1, _function_3);
+        _children_1.add(_doubleArrow);
       };
       StackPane _doubleArrow = ObjectExtensions.<StackPane>operator_doubleArrow(_stackPane, _function_1);
       Scene _scene = new Scene(_doubleArrow, 800, 600);

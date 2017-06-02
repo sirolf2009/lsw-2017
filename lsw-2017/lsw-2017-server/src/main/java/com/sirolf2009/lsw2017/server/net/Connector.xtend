@@ -30,6 +30,7 @@ import com.rabbitmq.client.Channel
 		val factory = new ConnectionFactory()
 		factory.host = "localhost"
 		factory.port = 5672
+		factory.virtualHost = "/floris"
 		val connection = factory.newConnection()
 		channel = connection.createChannel()
 		Queues.declareQueues(channel)

@@ -23,13 +23,18 @@ import javafx.stage.Stage
 import xtendfx.FXApp
 
 import static extension com.sirolf2009.lsw2017.leaderboard.Names.*
+import javafx.scene.text.Font
+import javafx.scene.layout.Background
+import javafx.scene.layout.BackgroundFill
+import javafx.scene.paint.Color
+import javafx.scene.layout.CornerRadii
 
 @FXApp class Leaderboard {
 
 	val ObservableList<Team> teams = FXCollections.observableArrayList()
 	val endDate = {
 		val cal = Calendar.instance
-		cal.set(2017, Calendar.JUNE, 3, 15, 0, 0)
+		cal.set(2017, Calendar.JUNE, 3, 17, 0, 0)
 		cal.time
 	}
 
@@ -37,7 +42,7 @@ import static extension com.sirolf2009.lsw2017.leaderboard.Names.*
 		try {
 			title = "LSW 2017 leaderboard"
 
-			val cluster = Cluster.builder.addContactPoint("localhost").withPort(32774).build
+			val cluster = Cluster.builder.addContactPoint("localhost").withPort(32769).build
 			val session = cluster.connect("lsw2017")
 
 			new Thread [
@@ -62,7 +67,7 @@ import static extension com.sirolf2009.lsw2017.leaderboard.Names.*
 			].start()
 
 			scene = new Scene(new StackPane() => [
-				children += new GridPane() => [
+				val table = new GridPane() => [
 					columnConstraints.add(new ColumnConstraints() => [
 						percentWidth = 10
 					])
@@ -99,15 +104,28 @@ import static extension com.sirolf2009.lsw2017.leaderboard.Names.*
 					], 1, 1)
 
 				]
-				children += new StackPane() => [
-					alignment = Pos.BOTTOM_RIGHT
-					children += new Label("time") => [
+				children += table
+				children += new StackPane() => [ pane |
+					background = new Background(new BackgroundFill(Color.BLUE, CornerRadii.EMPTY, Insets.EMPTY))
+					pane.alignment = Pos.BOTTOM_RIGHT
+					pane.children += new Label("time") => [
 						padding = new Insets(8)
 						val timeFormat = new SimpleDateFormat("HH:mm:ss")
-						new Thread[
-							while(true) {
-								Platform.runLater[
-									text = timeFormat.format(new Date(endDate.time - System.currentTimeMillis))
+						new Thread [
+							while (true) {
+								Platform.runLater [
+									val timeLeft = endDate.time - System.currentTimeMillis
+									text = timeFormat.format(new Date(timeLeft))
+									if (table.visible && Duration.ofMillis(timeLeft).toMinutes <= 10) {
+										minHeight = 8000
+										maxHeight = 8000
+										minWidth = 8000
+										maxWidth = 8000
+										pane.alignment = Pos.CENTER
+										alignment = Pos.CENTER
+										font = new Font(font.name, 100)
+										table.visible = false
+									}
 								]
 								Thread.sleep(Duration.ofSeconds(1).toMillis)
 							}
