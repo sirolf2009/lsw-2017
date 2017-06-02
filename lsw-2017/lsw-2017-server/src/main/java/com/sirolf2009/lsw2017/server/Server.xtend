@@ -23,7 +23,7 @@ import com.sirolf2009.lsw2017.common.model.NotifySuccesful
 //rabbit 15672
 //DONE Battleground to be played = the battleground that you have not gone to, and has the smallest queue
 //DONE You will not join a battleground that you have previously played
-//Overview of battlegrounds and who's playing/queueing
+//DONE Overview of battlegrounds and who's playing/queueing
 //DONE Generate unique barcodes
 //Leaderboard shows how long the game will still last for
 //last 10 mins; the points will dissappear and the timer will go fullscreen
