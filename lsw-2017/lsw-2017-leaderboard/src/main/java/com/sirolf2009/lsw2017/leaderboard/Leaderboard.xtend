@@ -69,13 +69,13 @@ import javafx.scene.layout.CornerRadii
 			scene = new Scene(new StackPane() => [
 				val table = new GridPane() => [
 					columnConstraints.add(new ColumnConstraints() => [
-						percentWidth = 10
+						percentWidth = 5
 					])
 					columnConstraints.add(new ColumnConstraints() => [
-						percentWidth = 80
+						percentWidth = 90
 					])
 					columnConstraints.add(new ColumnConstraints() => [
-						percentWidth = 10
+						percentWidth = 5
 					])
 					rowConstraints += new RowConstraints() => [
 						percentHeight = 10
@@ -111,7 +111,7 @@ import javafx.scene.layout.CornerRadii
 					pane.children += new Label("time") => [
 						padding = new Insets(8)
 						val timeFormat = new SimpleDateFormat("HH:mm:ss")
-						new Thread [
+						val timer = new Thread [
 							while (true) {
 								Platform.runLater [
 									val timeLeft = endDate.time - System.currentTimeMillis
@@ -129,7 +129,9 @@ import javafx.scene.layout.CornerRadii
 								]
 								Thread.sleep(Duration.ofSeconds(1).toMillis)
 							}
-						].start()
+						]
+						timer.daemon = true
+						timer.start()
 					]
 				]
 			], 800, 600) => [

@@ -107,21 +107,21 @@ public class Leaderboard extends Application {
           ObservableList<ColumnConstraints> _columnConstraints = it_2.getColumnConstraints();
           ColumnConstraints _columnConstraints_1 = new ColumnConstraints();
           final Procedure1<ColumnConstraints> _function_3 = (ColumnConstraints it_3) -> {
-            it_3.setPercentWidth(10);
+            it_3.setPercentWidth(5);
           };
           ColumnConstraints _doubleArrow = ObjectExtensions.<ColumnConstraints>operator_doubleArrow(_columnConstraints_1, _function_3);
           _columnConstraints.add(_doubleArrow);
           ObservableList<ColumnConstraints> _columnConstraints_2 = it_2.getColumnConstraints();
           ColumnConstraints _columnConstraints_3 = new ColumnConstraints();
           final Procedure1<ColumnConstraints> _function_4 = (ColumnConstraints it_3) -> {
-            it_3.setPercentWidth(80);
+            it_3.setPercentWidth(90);
           };
           ColumnConstraints _doubleArrow_1 = ObjectExtensions.<ColumnConstraints>operator_doubleArrow(_columnConstraints_3, _function_4);
           _columnConstraints_2.add(_doubleArrow_1);
           ObservableList<ColumnConstraints> _columnConstraints_4 = it_2.getColumnConstraints();
           ColumnConstraints _columnConstraints_5 = new ColumnConstraints();
           final Procedure1<ColumnConstraints> _function_5 = (ColumnConstraints it_3) -> {
-            it_3.setPercentWidth(10);
+            it_3.setPercentWidth(5);
           };
           ColumnConstraints _doubleArrow_2 = ObjectExtensions.<ColumnConstraints>operator_doubleArrow(_columnConstraints_5, _function_5);
           _columnConstraints_4.add(_doubleArrow_2);
@@ -229,7 +229,9 @@ public class Leaderboard extends Application {
                 throw Exceptions.sneakyThrow(_e);
               }
             };
-            new Thread(_function_5).start();
+            final Thread timer = new Thread(_function_5);
+            timer.setDaemon(true);
+            timer.start();
           };
           Label _doubleArrow = ObjectExtensions.<Label>operator_doubleArrow(_label, _function_4);
           _children_2.add(_doubleArrow);
